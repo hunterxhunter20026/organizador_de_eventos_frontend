@@ -1,0 +1,12 @@
+# Secretos / entorno
+.env
+*.log
+
+# Frontend (Node/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# General
+.DS_Store
+coverage/
