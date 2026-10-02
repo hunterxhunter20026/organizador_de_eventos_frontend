@@ -3,26 +3,26 @@ import { LoginForm } from './auth/LoginForm';
 import { MisEventos } from './features/eventos/MisEventos';
 import { EventoDetalle } from './features/eventos/EventoDetalle';
 import { GestionUsuarios } from './features/usuarios/GestionUsuarios';
+import { Hoy } from './features/hoy/Hoy';
 import { Proximamente } from './features/proximamente/Proximamente';
 import type { Evento } from './domain/types';
 
 type Vista = 'eventos' | 'usuarios' | 'hoy' | 'config';
 
-// ARCHITECTURAL TRACE: Frontend — composición raíz y navegación
-// La barra superior (app-nav) no aparece en las 6 imágenes de referencia
-// (que muestran pantallas sueltas) — se añadió para poder moverse entre
-// ellas dentro de una sola app; se mantiene deliberadamente discreta para
-// no competir visualmente con las tarjetas del diseño original.
-//
-// ALCANCE DE ESTE SPRINT: solo "Mis eventos" y "Usuarios" están
-// conectados a organizador_de_eventos_backend (Render + Supabase). "Hoy"
-// y "Configuración" se dejan visibles pero sin conexión (Proximamente)
-// porque esos endpoints no existen todavía en el backend.
+const ITEMS: { id: Vista; etiqueta: string }[] = [
+  { id: 'hoy', etiqueta: 'Hoy' },
+  { id: 'eventos', etiqueta: 'Mis eventos' },
+  { id: 'usuarios', etiqueta: 'Usuarios' },
+  { id: 'config', etiqueta: 'Configuración' }
+];
+
+// Composición raíz: barra lateral + contenido. "Hoy", "Mis eventos" y "Usuarios"
+// están conectados al backend; "Configuración" sigue como "Próximamente".
 export default function App() {
   const [autenticado, setAutenticado] = useState(!!localStorage.getItem('token'));
   const [vista, setVista] = useState<Vista>('eventos');
   const [eventoAbierto, setEventoAbierto] = useState<Evento | null>(null);
-
+  const [crearAlEntrar, setCrearAlEntrar] = useState(false);
   if (!autenticado) {
     return <LoginForm onAutenticado={() => setAutenticado(true)} />;
   }
@@ -34,33 +34,50 @@ export default function App() {
   }
 
   function irA(nuevaVista: Vista) {
+  setEventoAbierto(null);
+  setCrearAlEntrar(false);
+  setVista(nuevaVista);
+  }
+  function irACrearEvento() {
     setEventoAbierto(null);
-    setVista(nuevaVista);
+    setCrearAlEntrar(true);
+    setVista('eventos');
   }
 
   return (
-    <div className="app-shell">
-      <nav className="app-nav">
-        <div className="app-nav__tabs">
-          <button className={`app-nav__tab ${vista === 'eventos' ? 'is-active' : ''}`} onClick={() => irA('eventos')}>Mis eventos</button>
-          <button className={`app-nav__tab ${vista === 'usuarios' ? 'is-active' : ''}`} onClick={() => irA('usuarios')}>Usuarios</button>
-          <button className={`app-nav__tab ${vista === 'hoy' ? 'is-active' : ''}`} onClick={() => irA('hoy')}>Hoy</button>
-          <button className={`app-nav__tab ${vista === 'config' ? 'is-active' : ''}`} onClick={() => irA('config')}>Configuración</button>
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar__brand">Organizador</div>
+        <nav className="sidebar__nav" aria-label="Navegación principal">
+          {ITEMS.map(item => (
+            <button
+              key={item.id}
+              className={`sidebar__item ${vista === item.id ? 'is-active' : ''}`}
+              aria-current={vista === item.id ? 'page' : undefined}
+              onClick={() => irA(item.id)}
+            >
+              {item.etiqueta}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar__footer">
+          <button className="sidebar__item" onClick={cerrarSesion}>Cerrar sesión</button>
         </div>
-        <button className="app-nav__signout" onClick={cerrarSesion}>Cerrar sesión</button>
-      </nav>
+      </aside>
 
-      {eventoAbierto ? (
-        <EventoDetalle eventoInicial={eventoAbierto} onVolver={() => setEventoAbierto(null)} />
-      ) : vista === 'eventos' ? (
-        <MisEventos onAbrirEvento={setEventoAbierto} />
-      ) : vista === 'usuarios' ? (
-        <GestionUsuarios />
-      ) : vista === 'hoy' ? (
-        <Proximamente titulo="Hoy" />
-      ) : (
-        <Proximamente titulo="Configuración" />
-      )}
+      <main className="layout__main">
+        {eventoAbierto ? (
+          <EventoDetalle eventoInicial={eventoAbierto} onVolver={() => setEventoAbierto(null)} />
+        ) : vista === 'eventos' ? (
+          <MisEventos onAbrirEvento={setEventoAbierto} abrirFormulario={crearAlEntrar} />
+        ) : vista === 'usuarios' ? (
+          <GestionUsuarios />
+        ) : vista === 'hoy' ? (
+          <Hoy onAbrirEvento={setEventoAbierto} onCrearEvento={irACrearEvento} />
+        ) : (
+          <Proximamente titulo="Configuración" />
+        )}
+      </main>
     </div>
   );
 }
