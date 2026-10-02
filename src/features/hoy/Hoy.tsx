@@ -32,7 +32,7 @@ export function Hoy({
   const [hasError, setHasError] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [diasTxt, setDiasTxt] = useState('7');
-  const [verRegla, setVerRegla] = useState(false);
+  const [verRegla, setVerRegla] = useState(true);
   const [aviso, setAviso] = useState<string | null>(null);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
   const [falloAccion, setFalloAccion] = useState(false);
@@ -187,9 +187,9 @@ export function Hoy({
 
       {verRegla && (
         <p className="hoy-regla">
-          Primero los eventos vencidos, luego los de hoy y después los próximos dentro de los días elegidos.
-          Dentro de cada grupo se ordenan por fecha, del más cercano al más lejano. Los eventos completados o
-          cancelados no aparecen aquí.
+            Los eventos se muestran en tres grupos: Vencidas (la fecha ya pasó), Para hoy y Próximas (dentro de los días que elijas).
+            Dentro de cada grupo van primero los de fecha más cercana.
+            Los eventos completados o cancelados no aparecen.
         </p>
       )}
 
