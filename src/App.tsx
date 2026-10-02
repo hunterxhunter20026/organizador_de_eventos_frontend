@@ -6,14 +6,15 @@ import { GestionUsuarios } from './features/usuarios/GestionUsuarios';
 import { Hoy } from './features/hoy/Hoy';
 import { Proximamente } from './features/proximamente/Proximamente';
 import type { Evento } from './domain/types';
+import { IconoHoy, IconoEventos, IconoUsuarios, IconoConfig, IconoSalir } from './ui/Iconos';
 
 type Vista = 'eventos' | 'usuarios' | 'hoy' | 'config';
 
-const ITEMS: { id: Vista; etiqueta: string }[] = [
-  { id: 'hoy', etiqueta: 'Hoy' },
-  { id: 'eventos', etiqueta: 'Mis eventos' },
-  { id: 'usuarios', etiqueta: 'Usuarios' },
-  { id: 'config', etiqueta: 'Configuración' }
+const ITEMS: { id: Vista; etiqueta: string; icono: React.ReactNode }[] = [
+  { id: 'hoy', etiqueta: 'Hoy', icono: <IconoHoy /> },
+  { id: 'eventos', etiqueta: 'Mis eventos', icono: <IconoEventos /> },
+  { id: 'usuarios', etiqueta: 'Usuarios', icono: <IconoUsuarios /> },
+  { id: 'config', etiqueta: 'Configuración', icono: <IconoConfig /> }
 ];
 
 // Composición raíz: barra lateral + contenido. "Hoy", "Mis eventos" y "Usuarios"
@@ -46,25 +47,33 @@ export default function App() {
 
   return (
     <div className="layout">
-      <aside className="sidebar">
-        <div className="sidebar__brand">Organizador</div>
-        <nav className="sidebar__nav" aria-label="Navegación principal">
-          {ITEMS.map(item => (
-            <button
-              key={item.id}
-              className={`sidebar__item ${vista === item.id ? 'is-active' : ''}`}
-              aria-current={vista === item.id ? 'page' : undefined}
-              onClick={() => irA(item.id)}
-            >
-              {item.etiqueta}
+        <aside className="sidebar">
+          <div className="sidebar__brand">
+            <img className="sidebar__logo" src="/Hormigapp.png" alt="" />
+            <span className="sidebar__nombre">
+              Hormig<span className="sidebar__nombre-app">App</span>
+            </span>
+          </div>
+          <nav className="sidebar__nav" aria-label="Navegación principal">
+            {ITEMS.map(item => (
+              <button
+                key={item.id}
+                className={`sidebar__item ${vista === item.id ? 'is-active' : ''}`}
+                aria-current={vista === item.id ? 'page' : undefined}
+                onClick={() => irA(item.id)}
+              >
+                {item.icono}
+                <span>{item.etiqueta}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar__footer">
+            <button className="sidebar__item" onClick={cerrarSesion}>
+              <IconoSalir />
+              <span>Cerrar sesión</span>
             </button>
-          ))}
-        </nav>
-        <div className="sidebar__footer">
-          <button className="sidebar__item" onClick={cerrarSesion}>Cerrar sesión</button>
-        </div>
-      </aside>
-
+          </div>
+        </aside>
       <main className="layout__main">
         {eventoAbierto ? (
           <EventoDetalle eventoInicial={eventoAbierto} onVolver={() => setEventoAbierto(null)} />

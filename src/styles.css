@@ -445,9 +445,34 @@ h1.title, h2.title {
   background: #10131b;
   border-right: 1px solid #1d2230;
 }
-.sidebar__brand { color: #ffffff; font-weight: 700; font-size: 18px; padding: 0 12px 24px; }
+.sidebar__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 28px;
+}
+.sidebar__logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+.sidebar__nombre {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.sidebar__nombre-app { color: #7cb0ff; }
 .sidebar__nav { display: flex; flex-direction: column; gap: 4px; }
 .sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
   text-align: left;
   background: transparent;
   border: none;
