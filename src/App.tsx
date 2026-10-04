@@ -13,7 +13,7 @@ type Vista = 'eventos' | 'usuarios' | 'hoy' | 'config';
 const ITEMS: { id: Vista; etiqueta: string; icono: React.ReactNode }[] = [
   { id: 'hoy', etiqueta: 'Hoy', icono: <IconoHoy /> },
   { id: 'eventos', etiqueta: 'Mis eventos', icono: <IconoEventos /> },
-  { id: 'usuarios', etiqueta: 'Usuarios', icono: <IconoUsuarios /> },
+ // { id: 'usuarios', etiqueta: 'Usuarios', icono: <IconoUsuarios /> },
   { id: 'config', etiqueta: 'Configuración', icono: <IconoConfig /> }
 ];
 
