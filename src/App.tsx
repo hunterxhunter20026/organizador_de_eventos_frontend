@@ -80,8 +80,8 @@ export default function App() {
           <EventoDetalle eventoInicial={eventoAbierto} onVolver={() => setEventoAbierto(null)} />
         ) : vista === 'eventos' ? (
           <MisEventos onAbrirEvento={setEventoAbierto} abrirFormulario={crearAlEntrar} />
-        ) : vista === 'usuarios' ? (
-          <GestionUsuarios />
+       // ) : vista === 'usuarios' ? (
+        //  <GestionUsuarios />
         ) : vista === 'hoy' ? (
           <Hoy onAbrirEvento={setEventoAbierto} onCrearEvento={irACrearEvento} />
         ) : (
