@@ -1,24 +1,20 @@
 // ARCHITECTURAL TRACE: Frontend — tipos espejo de los DTOs del backend
-// (application.dto.*). Mantener sincronizados manualmente con el contrato REST.
-//
-// NOTA DE ALCANCE: el backend actual (organizador_de_eventos_backend) solo
-// implementa CRUD de Eventos y Usuarios. Los tipos de subtareas/vista-hoy/
-// configuración se dejan declarados para no romper las pantallas que ya
-// existían, pero esas pantallas NO llaman al backend todavía — se
-// conectarán en un próximo sprint cuando esos endpoints existan.
+// (co.edu.univalle.demo.dto / .model). Backend ya completo: Eventos,
+// Usuarios, Tareas logísticas, Hoy, Configuración y Auth (US-01 a US-12).
 
-export type EstadoSubtarea = 'PENDIENTE' | 'HECHO' | 'POSPUESTA';
-export type Urgencia = 'ALTO' | 'MEDIO' | 'BAJO';
-export type Severidad = 'ALTA' | 'MEDIA' | 'BAJA';
-
-// --- Conectado al backend actual ---
+export type TipoEvento = 'boda' | 'social' | 'corporativo' | 'cumpleanos' | 'otro';
+export type EstadoTarea = 'Pendiente' | 'Completada' | 'Pospuesta';
 
 export interface Evento {
   id: number;
   usuarioId: number;
   nombre: string;
+  tipo: TipoEvento | null;
+  clienteContacto: string | null;
   descripcion: string | null;
   fechaEvento: string; // ISO date (yyyy-MM-dd)
+  lugar: string | null;
+  plazoLimite: string | null; // ISO date
   estado: string | null;
   fechaCreacion: string | null;
 }
@@ -32,33 +28,61 @@ export interface Usuario {
   fechaCreacion: string | null;
 }
 
-// --- Todavía NO implementado en el backend (fuera de alcance de este sprint) ---
-
-export interface Subtarea {
-  id: string;
-  nombre: string;
-  categoria: string | null;
-  plazo: string | null;
+export interface TareaLogistica {
+  id: number;
+  eventoId: number;
+  usuarioId: number;
+  titulo: string;
+  descripcion: string | null;
+  fechaLimite: string; // ISO date
   horasEstimadas: number;
-  criticidadProveedorAlta: boolean;
-  estado: EstadoSubtarea;
-  nota: string | null;
+  estado: EstadoTarea;
+  fechaEjecucion: string | null;
+  notaEjecucion: string | null;
+  fechaCreacion: string | null;
 }
 
-export interface Conflicto {
-  fecha: string;
+export interface Progreso {
+  total: number;
+  completadas: number;
+  porcentaje: number;
+}
+
+export interface HoyResponse {
+  regla: string;
+  vencidas: TareaLogistica[];
+  paraHoy: TareaLogistica[];
+  proximas: TareaLogistica[];
+}
+
+export interface LimiteDiario {
+  limiteHorasDiarias: number;
+}
+
+export interface UsuarioResumen {
+  id: number;
+  nombre: string;
+  email: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  usuario: UsuarioResumen;
+}
+
+/** Detalle de un conflicto de sobrecarga diaria (US-07/US-08), adjunto a un ApiError. */
+export interface ConflictoSobrecarga {
   horasTotales: number;
-  horasExcedentes: number;
-  subtareasInvolucradas: Subtarea[];
-  severidad: Severidad;
+  limite: number;
+  opciones: string[];
 }
 
-export interface VistaHoyItem {
-  subtarea: Subtarea;
-  urgencia: Urgencia;
-}
+/** Error enriquecido: si el backend respondió 409 con detalle de sobrecarga, viene en `conflicto`. */
+export class ApiError extends Error {
+  conflicto: ConflictoSobrecarga | null;
 
-export interface ReprogramarResultado {
-  evento: Evento;
-  conflicto: Conflicto | null;
+  constructor(mensaje: string, conflicto: ConflictoSobrecarga | null = null) {
+    super(mensaje);
+    this.conflicto = conflicto;
+  }
 }

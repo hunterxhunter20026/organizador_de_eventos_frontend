@@ -1,37 +1,51 @@
-import { useEffect, useState } from 'react';
-import { eventosApi, usuariosApi } from '../../api/eventosApi';
-import type { Evento, Usuario } from '../../domain/types';
+import { useState } from 'react';
+import { eventosApi } from '../../api/eventosApi';
+import type { Evento, TipoEvento } from '../../domain/types';
 import { Modal } from '../../ui/Modal';
 
 // ARCHITECTURAL TRACE: Frontend feature — eventos. Traza: US-001
-// Microcopy y validación inline según la Guía de Diseño.
-type Errores = { nombre?: string; fecha?: string; usuario?: string };
+// Campos del backlog (nombre, tipo, cliente/contacto, fecha, lugar, plazo
+// límite) con microcopy, validación inline y modales de la Guía de Diseño.
+// No hay selector de "Organizador": EventoService asigna el usuarioId a
+// partir del usuario autenticado, nunca de un valor elegido en el form.
+type Errores = { nombre?: string; fecha?: string; plazo?: string };
 
-function fechaValida(valor: string): boolean {
+export const TIPOS: { valor: TipoEvento; etiqueta: string }[] = [
+  { valor: 'boda', etiqueta: 'Boda' },
+  { valor: 'social', etiqueta: 'Social' },
+  { valor: 'corporativo', etiqueta: 'Corporativo' },
+  { valor: 'cumpleanos', etiqueta: 'Cumpleaños' },
+  { valor: 'otro', etiqueta: 'Otro' }
+];
+
+export function fechaValida(valor: string): boolean {
   if (!valor) return false;
   return !Number.isNaN(new Date(`${valor}T00:00:00`).getTime());
 }
 
 export function FormularioEvento({ onCreado, onCancelar }: { onCreado: (evento: Evento) => void; onCancelar: () => void }) {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [usuarioId, setUsuarioId] = useState('');
   const [nombre, setNombre] = useState('');
-  const [descripcion, setDescripcion] = useState('');
+  const [tipo, setTipo] = useState<TipoEvento>('social');
+  const [clienteContacto, setClienteContacto] = useState('');
   const [fechaEvento, setFechaEvento] = useState('');
+  const [lugar, setLugar] = useState('');
+  const [plazoLimite, setPlazoLimite] = useState('');
   const [estado, setEstado] = useState('Planificación');
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const [eventoCreado, setEventoCreado] = useState<Evento | null>(null); // modal de éxito
-  const [falloGuardar, setFalloGuardar] = useState(false);               // modal de error
-
-  useEffect(() => { usuariosApi.listar().then(setUsuarios).catch(() => setUsuarios([])); }, []);
+  const [falloMensaje, setFalloMensaje] = useState<string | null>(null); // modal de error
 
   function validar(): Errores {
     const e: Errores = {};
     if (!nombre.trim()) e.nombre = 'Escribe el nombre del evento para continuar.';
     if (!fechaValida(fechaEvento)) e.fecha = 'Selecciona una fecha válida para el evento.';
-    if (!usuarioId) e.usuario = 'Selecciona el organizador del evento.';
+    if (plazoLimite && !fechaValida(plazoLimite)) e.plazo = 'Selecciona una fecha válida para el plazo.';
     return e;
+  }
+
+  function quitarError(campo: keyof Errores) {
+    setErrores(prev => ({ ...prev, [campo]: undefined }));
   }
 
   async function manejarSubmit(ev: React.FormEvent) {
@@ -43,22 +57,20 @@ export function FormularioEvento({ onCreado, onCancelar }: { onCreado: (evento: 
     setGuardando(true);
     try {
       const evento = await eventosApi.crear({
-        usuarioId: Number(usuarioId),
         nombre: nombre.trim(),
-        descripcion: descripcion.trim() || undefined,
+        tipo,
+        clienteContacto: clienteContacto.trim() || undefined,
         fechaEvento,
+        lugar: lugar.trim() || undefined,
+        plazoLimite: plazoLimite || undefined,
         estado
       });
       setEventoCreado(evento); // el formulario sigue montado hasta que se pulse "Aceptar"
-    } catch {
-      setFalloGuardar(true);   // no se borra nada del formulario
+    } catch (err) {
+      setFalloMensaje(err instanceof Error ? err.message : 'Ha ocurrido un error al guardar.'); // no se borra nada del formulario
     } finally {
       setGuardando(false);
     }
-  }
-
-  function quitarError(campo: keyof Errores) {
-    setErrores(prev => ({ ...prev, [campo]: undefined }));
   }
 
   return (
@@ -78,6 +90,23 @@ export function FormularioEvento({ onCreado, onCancelar }: { onCreado: (evento: 
         </div>
 
         <div className="field">
+          <label htmlFor="tipo-evento">Tipo</label>
+          <select id="tipo-evento" value={tipo} onChange={e => setTipo(e.target.value as TipoEvento)}>
+            {TIPOS.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+          </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="cliente-evento">Cliente / contacto (opcional)</label>
+          <input
+            id="cliente-evento"
+            placeholder="Ej: María Pérez"
+            value={clienteContacto}
+            onChange={e => setClienteContacto(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
           <label htmlFor="fecha-evento">Fecha del evento *</label>
           <input
             id="fecha-evento"
@@ -91,33 +120,26 @@ export function FormularioEvento({ onCreado, onCancelar }: { onCreado: (evento: 
         </div>
 
         <div className="field">
-          <label htmlFor="descripcion-evento">Descripción (opcional)</label>
+          <label htmlFor="lugar-evento">Lugar (opcional)</label>
           <input
-            id="descripcion-evento"
-            placeholder="Ej: Muestra de proyectos de estudiantes"
-            value={descripcion}
-            onChange={e => setDescripcion(e.target.value)}
+            id="lugar-evento"
+            placeholder="Ej: Salón principal"
+            value={lugar}
+            onChange={e => setLugar(e.target.value)}
           />
         </div>
 
         <div className="field">
-          <label htmlFor="usuario-evento">Organizador *</label>
-          <select
-            id="usuario-evento"
-            value={usuarioId}
-            onChange={e => { setUsuarioId(e.target.value); quitarError('usuario'); }}
-            aria-invalid={!!errores.usuario}
-            aria-describedby={errores.usuario ? 'usuario-evento-error' : undefined}
-          >
-            <option value="">Selecciona un usuario…</option>
-            {usuarios.map(u => (
-              <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>
-            ))}
-          </select>
-          {errores.usuario && <p id="usuario-evento-error" className="error-text" role="alert">{errores.usuario}</p>}
-          {usuarios.length === 0 && (
-            <p className="helper-text">No hay usuarios todavía — crea uno primero en la pestaña "Usuarios".</p>
-          )}
+          <label htmlFor="plazo-evento">Plazo límite para tener la logística lista (opcional)</label>
+          <input
+            id="plazo-evento"
+            type="date"
+            value={plazoLimite}
+            onChange={e => { setPlazoLimite(e.target.value); quitarError('plazo'); }}
+            aria-invalid={!!errores.plazo}
+            aria-describedby={errores.plazo ? 'plazo-evento-error' : undefined}
+          />
+          {errores.plazo && <p id="plazo-evento-error" className="error-text" role="alert">{errores.plazo}</p>}
         </div>
 
         <div className="field">
@@ -152,18 +174,18 @@ export function FormularioEvento({ onCreado, onCancelar }: { onCreado: (evento: 
         </Modal>
       )}
 
-      {falloGuardar && (
+      {falloMensaje && (
         <Modal
           titulo="Error"
           urgente
-          onCerrar={() => setFalloGuardar(false)}
+          onCerrar={() => setFalloMensaje(null)}
           acciones={
-            <button className="btn btn-outline btn-outline--danger" onClick={() => setFalloGuardar(false)}>
+            <button className="btn btn-outline btn-outline--danger" onClick={() => setFalloMensaje(null)}>
               Cerrar
             </button>
           }
         >
-          Ha ocurrido un error al guardar. Inténtalo de nuevo; tus datos siguen en el formulario.
+          {falloMensaje} Tus datos siguen en el formulario.
         </Modal>
       )}
     </>

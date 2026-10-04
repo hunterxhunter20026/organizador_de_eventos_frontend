@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import { authApi } from '../api/authApi';
 import { usuariosApi } from '../api/eventosApi';
 
-// Login (bypass actual) + registro de usuario conectado a POST /api/usuarios.
+// ARCHITECTURAL TRACE: Frontend feature — auth (US-11). Traza: US-021
+// Login real contra POST /api/auth/login (el backend emite el token firmado y
+// AuthFilter lo exige en casi toda la API) + registro conectado a
+// POST /api/usuarios, la única ruta de escritura pública además del login.
 // Microcopy y validaciones según la Guía de Diseño (errores inline en rojo bajo el campo).
 
 type Modo = 'login' | 'registro';
@@ -41,13 +45,19 @@ export function LoginForm({ onAutenticado }: { onAutenticado: () => void }) {
     e.preventDefault();
     setError(null);
     setAviso(null);
+    if (!email.trim() || !password) {
+      setError('Escribe tu correo y tu contraseña para continuar.');
+      return;
+    }
     setCargando(true);
     try {
-      // Bypass de autenticación (sin endpoint de login hasta el Sprint 2)
-      await new Promise(resolve => setTimeout(resolve, 500));
-      localStorage.setItem('token', 'token-simulado-bypass');
+      const { token, usuario } = await authApi.login(email.trim(), password);
+      localStorage.setItem('token', token);
+      localStorage.setItem('usuarioNombre', usuario.nombre);
       onAutenticado();
     } catch (err) {
+      // El backend nunca revela si el correo existe o la contraseña es incorrecta
+      // (US-11, Escenario 2): se muestra tal cual su mensaje genérico.
       setError(err instanceof Error ? err.message : 'No pudimos iniciar tu sesión.');
     } finally {
       setCargando(false);
@@ -103,9 +113,9 @@ export function LoginForm({ onAutenticado }: { onAutenticado: () => void }) {
       setErroresReg({});
       setAviso('Tu cuenta se creó correctamente. Ya puedes iniciar sesión.');
       setModo('login');
-    } catch {
-      // Se conservan los datos del formulario
-      setErrorGuardar('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.');
+    } catch (err) {
+      // Se conservan los datos del formulario; si el backend explica el rechazo (p. ej. correo repetido) se muestra.
+      setErrorGuardar(err instanceof Error && err.message ? err.message : 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
       setGuardando(false);
     }
@@ -129,7 +139,7 @@ export function LoginForm({ onAutenticado }: { onAutenticado: () => void }) {
 
             {aviso && <p role="status">{aviso}</p>}
 
-            <form onSubmit={manejarLogin} style={{ textAlign: 'left' }}>
+            <form onSubmit={manejarLogin} style={{ textAlign: 'left' }} noValidate>
               <div className="field">
                 <label htmlFor="email">Correo electrónico</label>
                 <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />

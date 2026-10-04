@@ -4,7 +4,7 @@ import { MisEventos } from './features/eventos/MisEventos';
 import { EventoDetalle } from './features/eventos/EventoDetalle';
 import { GestionUsuarios } from './features/usuarios/GestionUsuarios';
 import { Hoy } from './features/hoy/Hoy';
-import { Proximamente } from './features/proximamente/Proximamente';
+import { Configuracion } from './features/configuracion/Configuracion';
 import type { Evento } from './domain/types';
 import { IconoHoy, IconoEventos, IconoUsuarios, IconoConfig, IconoSalir } from './ui/Iconos';
 
@@ -17,8 +17,8 @@ const ITEMS: { id: Vista; etiqueta: string; icono: React.ReactNode }[] = [
   { id: 'config', etiqueta: 'Configuración', icono: <IconoConfig /> }
 ];
 
-// Composición raíz: barra lateral + contenido. "Hoy", "Mis eventos" y "Usuarios"
-// están conectados al backend; "Configuración" sigue como "Próximamente".
+// Composición raíz: barra lateral + contenido. Las cuatro secciones (Hoy, Mis
+// eventos, Usuarios y Configuración) están conectadas al backend.
 export default function App() {
   const [autenticado, setAutenticado] = useState(!!localStorage.getItem('token'));
   const [vista, setVista] = useState<Vista>('eventos');
@@ -30,6 +30,7 @@ export default function App() {
 
   function cerrarSesion() {
     localStorage.removeItem('token');
+    localStorage.removeItem('usuarioNombre');
     setAutenticado(false);
     setEventoAbierto(null);
   }
@@ -84,7 +85,7 @@ export default function App() {
         ) : vista === 'hoy' ? (
           <Hoy onAbrirEvento={setEventoAbierto} onCrearEvento={irACrearEvento} />
         ) : (
-          <Proximamente titulo="Configuración" />
+          <Configuracion />
         )}
       </main>
     </div>
