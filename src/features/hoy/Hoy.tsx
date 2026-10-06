@@ -27,7 +27,7 @@ export function Hoy({
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoTarea>('Pendiente');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [verRegla, setVerRegla] = useState(false);
+  const [verRegla, setVerRegla] = useState(true);
   const [conflicto, setConflicto] = useState<(Conflicto & { tareaId: number }) | null>(null);
 
   useEffect(() => { eventosApi.listar().then(setEventos).catch(() => setEventos([])); }, []);
@@ -144,7 +144,7 @@ export function Hoy({
       {hasError && (
         <div className="estado-centro" role="alert">
           <div className="estado-centro__icono" aria-hidden="true">!</div>
-          <p className="estado-centro__texto">{errorMsg ?? 'Ha ocurrido un error cargando la información, inténtalo de nuevo.'}</p>
+            <p className="estado-centro__texto">Ha ocurrido un error cargando la información, inténtalo de nuevo.</p>
           <button className="btn btn-primary" style={{ width: 'auto' }} onClick={cargar}>Reintentar</button>
         </div>
       )}

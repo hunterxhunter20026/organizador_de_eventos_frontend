@@ -582,3 +582,36 @@ h1.title, h2.title {
 
 .hoy-card--vencido { border-left: 4px solid var(--urgencia-vencida); }
 .hoy-card--hoy { border-left: 4px solid var(--urgencia-vence-hoy); }
+
+/* Textarea como los demás campos */
+.field textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  color: var(--text-primary);
+  resize: vertical;
+}
+.field textarea:focus { outline: 2px solid var(--accent-blue); outline-offset: 1px; }
+.field textarea[aria-invalid="true"] { border-color: var(--danger-text); }
+
+/* Barra de progreso: azul activo, verde vacío o completado, rojo error */
+.progress-fill--azul { background: var(--accent-blue); }
+.progress-fill--verde { background: #1f8a4c; }
+.progress-fill--rojo { background: var(--urgencia-vencida); }
+.progress-track { height: 10px; }
+.progreso-texto { margin: 6px 0 16px; font-size: 13px; font-weight: 600; }
+.progreso-texto--azul { color: var(--accent-blue); }
+.progreso-texto--verde { color: var(--badge-hecho-text); }
+.progreso-texto--rojo { color: var(--danger-text); }
+
+/* Hoy: evento al que pertenece la tarea */
+.hoy-card__titulo { font-weight: 700; font-size: 16px; }
+.hoy-card__evento {
+  background: none; border: none; padding: 0; margin-top: 4px;
+  color: var(--accent-blue); font: 600 13px var(--font-sans); cursor: pointer;
+}
+.hoy-card__evento:hover { text-decoration: underline; }
