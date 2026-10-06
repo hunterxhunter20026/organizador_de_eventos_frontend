@@ -1,3 +1,4 @@
+import { httpRequest } from '../api/httpClient';
 import { useState } from 'react';
 import { usuariosApi } from '../api/eventosApi';
 
@@ -43,12 +44,15 @@ export function LoginForm({ onAutenticado }: { onAutenticado: () => void }) {
     setAviso(null);
     setCargando(true);
     try {
-      // Bypass de autenticación (sin endpoint de login hasta el Sprint 2)
-      await new Promise(resolve => setTimeout(resolve, 500));
-      localStorage.setItem('token', 'token-simulado-bypass');
+      const respuesta = await httpRequest<{ token: string }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), password })
+      });
+      localStorage.setItem('token', respuesta.token);
       onAutenticado();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No pudimos iniciar tu sesión.');
+    } catch {
+      // Mensaje genérico a propósito: no revela si el correo existe
+      setError('Usuario o contraseña incorrectos.');
     } finally {
       setCargando(false);
     }

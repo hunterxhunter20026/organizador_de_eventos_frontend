@@ -17,6 +17,11 @@ export async function httpRequest<T>(path: string, options: RequestInit = {}): P
   const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!response.ok) {
+    // Token vencido o inválido: se limpia y la app vuelve al login
+    if (response.status === 401 && path !== '/api/auth/login' && token) {
+      localStorage.removeItem('token');
+      window.location.reload();
+    }
     const cuerpo = await response.json().catch(() => ({ mensaje: response.statusText }));
     throw new Error(cuerpo.mensaje ?? `Error HTTP ${response.status}`);
   }
