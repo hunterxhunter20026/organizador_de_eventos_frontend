@@ -1,29 +1,46 @@
 import { httpRequest } from './httpClient';
-import type { HoyRespuesta, Tarea } from '../domain/tarea';
+import type { EstadoTarea, TareaLogistica } from '../domain/types';
 
-export const hoyApi = {
-  obtener: (filtros: { eventoId?: number; estado?: string } = {}) => {
-    const q = new URLSearchParams();
-    if (filtros.eventoId) q.set('eventoId', String(filtros.eventoId));
-    if (filtros.estado) q.set('estado', filtros.estado);
-    const s = q.toString();
-    return httpRequest<HoyRespuesta>(`/api/hoy${s ? `?${s}` : ''}`);
-  }
-};
+// ARCHITECTURAL TRACE: Frontend — cliente tipado de tareas logísticas
+// (subtareas de un evento). US-02, US-03, US-06, US-07, US-08, US-09.
+
+export interface DatosTarea {
+  titulo: string;
+  descripcion?: string;
+  fechaLimite: string;
+  horasEstimadas: number;
+}
 
 export const tareasApi = {
-  listarPorEvento: (eventoId: number) => httpRequest<Tarea[]>(`/api/eventos/${eventoId}/tareas`),
+  listarPorEvento: (eventoId: number) =>
+    httpRequest<TareaLogistica[]>(`/api/eventos/${eventoId}/tareas`),
 
-  crear: (
-    eventoId: number,
-    datos: { usuarioId: number; titulo: string; descripcion?: string; fechaLimite: string; horasEstimadas: number; estado?: string }
-  ) => httpRequest<Tarea>(`/api/eventos/${eventoId}/tareas`, { method: 'POST', body: JSON.stringify(datos) }),
+  crear: (eventoId: number, datos: DatosTarea) =>
+    httpRequest<TareaLogistica>(`/api/eventos/${eventoId}/tareas`, {
+      method: 'POST',
+      body: JSON.stringify(datos)
+    }),
 
-  eliminar: (id: number) => httpRequest<void>(`/api/tareas/${id}`, { method: 'DELETE' }),
+  actualizar: (id: number, datos: DatosTarea) =>
+    httpRequest<TareaLogistica>(`/api/tareas/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(datos)
+    }),
 
+  eliminar: (id: number) =>
+    httpRequest<void>(`/api/tareas/${id}`, { method: 'DELETE' }),
+
+  // Lanza ApiError con `conflicto` poblado si el backend responde 409 (US-07).
+  marcarEstado: (id: number, estado: EstadoTarea, nota?: string) =>
+    httpRequest<TareaLogistica>(`/api/tareas/${id}/estado`, {
+      method: 'PATCH',
+      body: JSON.stringify({ estado, nota })
+    }),
+
+  // Lanza ApiError con `conflicto` poblado si el nuevo plazo supera el límite diario (US-07/US-08).
   reprogramar: (id: number, nuevoPlazo: string) =>
-    httpRequest<Tarea>(`/api/tareas/${id}/reprogramar`, { method: 'PUT', body: JSON.stringify({ nuevoPlazo }) }),
-
-  marcarEstado: (id: number, estado: string, nota?: string) =>
-    httpRequest<Tarea>(`/api/tareas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado, nota }) })
+    httpRequest<TareaLogistica>(`/api/tareas/${id}/reprogramar`, {
+      method: 'PUT',
+      body: JSON.stringify({ nuevoPlazo })
+    })
 };

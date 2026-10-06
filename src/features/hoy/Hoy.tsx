@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { hoyApi } from '../../api/hoyApi';
 import { eventosApi } from '../../api/eventosApi';
-import { hoyApi, tareasApi } from '../../api/tareasApi';
-import { ESTADO } from '../../domain/tarea';
-import type { HoyRespuesta, Tarea } from '../../domain/tarea';
-import type { Evento } from '../../domain/types';
-import { formatearFechaLarga } from '../../ui/format';
-import { Modal } from '../../ui/Modal';
+import type { EstadoTarea, Evento, HoyResponse, TareaLogistica } from '../../domain/types';
+import { formatearFechaCorta } from '../../ui/format';
+import { Badge } from '../../ui/primitives';
+import { ConflictoBox } from '../../ui/ConflictoBox';
+import type { Conflicto } from '../../ui/ConflictoBox';
+import { TareaAcciones } from '../tareas/TareaAcciones';
 
-type Tipo = 'vencida' | 'hoy' | 'proxima';
-
-const REGLA_POR_DEFECTO =
-  'Las tareas se muestran en tres grupos: Vencidas, Para hoy y Próximas. Dentro de cada grupo van primero las de fecha más cercana y, si coinciden, la de menor esfuerzo estimado.';
-
-const fechaValida = (v: string) => !!v && !Number.isNaN(new Date(`${v}T00:00:00`).getTime());
+// ARCHITECTURAL TRACE: Frontend feature — vista "Hoy" (US-04, US-05, US-06,
+// US-07, US-08, US-09). Las gestiones vienen agrupadas y ordenadas por el
+// backend (Vencidas → Para hoy → Próximas, regla en `datos.regla`); aquí solo
+// se presentan con el diseño de tarjetas y los estados de carga/error/vacío.
+type Tipo = 'vencido' | 'hoy' | 'proximo';
 
 export function Hoy({
   onAbrirEvento,
@@ -21,154 +21,80 @@ export function Hoy({
   onAbrirEvento: (evento: Evento) => void;
   onCrearEvento: () => void;
 }) {
-  const [data, setData] = useState<HoyRespuesta | null>(null);
+  const [datos, setDatos] = useState<HoyResponse | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [eventoFiltro, setEventoFiltro] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoTarea>('Pendiente');
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [filtroEvento, setFiltroEvento] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('Todos');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [verRegla, setVerRegla] = useState(true);
-  const [aviso, setAviso] = useState<string | null>(null);
-  const [procesandoId, setProcesandoId] = useState<number | null>(null);
-  const [falloAccion, setFalloAccion] = useState(false);
+  const [conflicto, setConflicto] = useState<(Conflicto & { tareaId: number }) | null>(null);
 
-  // Reprogramar
-  const [reprogramando, setReprogramando] = useState<Tarea | null>(null);
-  const [nuevaFecha, setNuevaFecha] = useState('');
-  const [errorFecha, setErrorFecha] = useState<string | null>(null);
-  const [errorServidor, setErrorServidor] = useState<string | null>(null);
-
-  // Posponer
-  const [posponiendo, setPosponiendo] = useState<Tarea | null>(null);
-  const [nota, setNota] = useState('');
-  const [errorNota, setErrorNota] = useState<string | null>(null);
-
-  const cargar = useCallback((conSkeleton = true) => {
-    if (conSkeleton) setIsLoading(true);
-    setHasError(false);
-    hoyApi
-      .obtener({
-        eventoId: filtroEvento ? Number(filtroEvento) : undefined,
-        estado: filtroEstado === 'Todos' ? undefined : filtroEstado
-      })
-      .then(setData)
-      .catch(() => setHasError(true))
-      .finally(() => setIsLoading(false));
-  }, [filtroEvento, filtroEstado]);
-
-  useEffect(() => { cargar(); }, [cargar]);
   useEffect(() => { eventosApi.listar().then(setEventos).catch(() => setEventos([])); }, []);
 
-  const vencidas = data?.vencidas ?? [];
-  const paraHoy = data?.paraHoy ?? [];
-  const proximas = data?.proximas ?? [];
+  function cargar() {
+    setIsLoading(true);
+    setErrorMsg(null);
+    hoyApi
+      .obtener({ eventoId: eventoFiltro ? Number(eventoFiltro) : undefined, estado: estadoFiltro })
+      .then(setDatos)
+      .catch(err => setErrorMsg(err instanceof Error ? err.message : 'No pudimos cargar la vista Hoy.'))
+      .finally(() => setIsLoading(false));
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(); }, [eventoFiltro, estadoFiltro]);
+
+  const vencidas = datos?.vencidas ?? [];
+  const paraHoy = datos?.paraHoy ?? [];
+  const proximas = datos?.proximas ?? [];
+  const hasError = !!errorMsg;
   const isEmpty = !isLoading && !hasError && vencidas.length + paraHoy.length + proximas.length === 0;
   const isSuccess = !isLoading && !hasError && !isEmpty;
 
-  const eventoDe = (t: Tarea) => eventos.find(e => e.id === t.eventoId);
-
-  async function marcarHecha(t: Tarea) {
-    setAviso(null);
-    setProcesandoId(t.id);
-    try {
-      await tareasApi.marcarEstado(t.id, ESTADO.ejecutada);
-      setAviso(`"${t.titulo}" quedó como hecha.`);
-      cargar(false);
-    } catch {
-      setFalloAccion(true);
-    } finally {
-      setProcesandoId(null);
-    }
+  function eventoDe(tarea: TareaLogistica): Evento | undefined {
+    return eventos.find(e => e.id === tarea.eventoId);
   }
 
-  function abrirPosponer(t: Tarea) {
-    setPosponiendo(t);
-    setNota('');
-    setErrorNota(null);
-  }
-
-  async function confirmarPosponer() {
-    if (!posponiendo) return;
-    if (!nota.trim()) {
-      setErrorNota('Escribe el motivo para posponer la tarea.');
-      return;
-    }
-    setAviso(null);
-    setProcesandoId(posponiendo.id);
-    try {
-      await tareasApi.marcarEstado(posponiendo.id, ESTADO.pospuesta, nota.trim());
-      setAviso(`"${posponiendo.titulo}" quedó pospuesta.`);
-      setPosponiendo(null);
-      cargar(false);
-    } catch {
-      setPosponiendo(null);
-      setFalloAccion(true);
-    } finally {
-      setProcesandoId(null);
-    }
-  }
-
-  function abrirReprogramar(t: Tarea) {
-    setReprogramando(t);
-    setNuevaFecha(t.fechaLimite.slice(0, 10));
-    setErrorFecha(null);
-    setErrorServidor(null);
-  }
-
-  async function guardarNuevaFecha() {
-    if (!reprogramando) return;
-    if (!fechaValida(nuevaFecha)) {
-      setErrorFecha('Selecciona una fecha válida para la tarea.');
-      return;
-    }
-    setErrorServidor(null);
-    setProcesandoId(reprogramando.id);
-    try {
-      await tareasApi.reprogramar(reprogramando.id, nuevaFecha);
-      setAviso(`"${reprogramando.titulo}" se reprogramó para el ${formatearFechaLarga(nuevaFecha)}.`);
-      setReprogramando(null);
-      cargar(false);
-    } catch (err) {
-      // Si el back rechaza por sobrecarga diaria, se muestra su mensaje y se deja elegir otra fecha
-      setErrorServidor(err instanceof Error ? err.message : 'No se pudo reprogramar.');
-    } finally {
-      setProcesandoId(null);
-    }
-  }
-
-  function tarjeta(t: Tarea, tipo: Tipo) {
+  function tarjeta(tarea: TareaLogistica, tipo: Tipo) {
     const badge =
-      tipo === 'vencida' ? <span className="badge badge--alta">Vencida</span>
-      : tipo === 'hoy' ? <span className="badge badge--media">Para hoy</span>
-      : <span className="badge badge--pendiente">Pendiente</span>;
-    const evento = eventoDe(t);
+      tarea.estado === 'Completada' ? <Badge tipo="hecho">Completada</Badge>
+      : tarea.estado === 'Pospuesta' ? <Badge tipo="media">Pospuesta</Badge>
+      : tipo === 'vencido' ? <Badge tipo="alta">Vencida</Badge>
+      : tipo === 'hoy' ? <Badge tipo="media">Para hoy</Badge>
+      : <Badge tipo="pendiente">Pendiente</Badge>;
+    const evento = eventoDe(tarea);
     return (
-      <article key={t.id} className={`hoy-card hoy-card--${tipo}`}>
+      <article key={tarea.id} className={`hoy-card hoy-card--${tipo}`}>
         <div className="hoy-card__header">
-          <span className="hoy-card__titulo">{t.titulo}</span>
+          {evento ? (
+            <button className="hoy-card__nombre" title="Abrir evento" onClick={() => onAbrirEvento(evento)}>{tarea.titulo}</button>
+          ) : (
+            <span className="hoy-card__nombre">{tarea.titulo}</span>
+          )}
           {badge}
         </div>
-        {evento ? (
-          <button className="hoy-card__evento" onClick={() => onAbrirEvento(evento)}>
-            Evento: {evento.nombre}
-          </button>
-        ) : (
-          <p className="hoy-card__meta" style={{ margin: 0 }}>Evento {t.eventoId}</p>
-        )}
         <p className="hoy-card__meta">
-          Vence: {formatearFechaLarga(t.fechaLimite)} · {t.horasEstimadas} h estimadas
-          {t.estado ? ` · ${t.estado}` : ''}
+          {evento?.nombre ?? `Evento #${tarea.eventoId}`} · {formatearFechaCorta(tarea.fechaLimite)} · {tarea.horasEstimadas}h
+          {tarea.notaEjecucion ? ` · "${tarea.notaEjecucion}"` : ''}
         </p>
-        <div className="hoy-card__acciones">
-          <button className="btn btn-primary" disabled={procesandoId === t.id} onClick={() => marcarHecha(t)}>✔ Hecha</button>
-          <button className="btn btn-outline" disabled={procesandoId === t.id} onClick={() => abrirPosponer(t)}>Posponer</button>
-          <button className="btn btn-outline" disabled={procesandoId === t.id} onClick={() => abrirReprogramar(t)}>Reprogramar</button>
-        </div>
+
+        {conflicto?.tareaId === tarea.id && (
+          <ConflictoBox conflicto={conflicto} onCerrar={() => setConflicto(null)} />
+        )}
+
+        {estadoFiltro === 'Pendiente' && (
+          <TareaAcciones
+            tarea={tarea}
+            onCambio={cargar}
+            onConflicto={c => setConflicto(c ? { ...c, tareaId: tarea.id } : null)}
+          />
+        )}
       </article>
     );
   }
 
-  function seccion(titulo: string, clase: string, lista: Tarea[], tipo: Tipo) {
+  function seccion(titulo: string, clase: string, lista: TareaLogistica[], tipo: Tipo) {
     if (lista.length === 0) return null;
     return (
       <section className="hoy-seccion">
@@ -188,17 +114,17 @@ export function Hoy({
       <div className="hoy-filtros">
         <div className="field">
           <label htmlFor="hoy-evento">Evento</label>
-          <select id="hoy-evento" value={filtroEvento} onChange={e => setFiltroEvento(e.target.value)}>
+          <select id="hoy-evento" value={eventoFiltro} onChange={e => setEventoFiltro(e.target.value)}>
             <option value="">Todos</option>
-            {eventos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nombre}</option>)}
           </select>
         </div>
         <div className="field">
           <label htmlFor="hoy-estado">Estado</label>
-          <select id="hoy-estado" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-            <option value="Todos">Todos</option>
-            <option value={ESTADO.pendiente}>Pendiente</option>
-            <option value={ESTADO.pospuesta}>Pospuesta</option>
+          <select id="hoy-estado" value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value as EstadoTarea)}>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Completada">Completada</option>
+            <option value="Pospuesta">Pospuesta</option>
           </select>
         </div>
         <button className="link-ayuda" aria-expanded={verRegla} onClick={() => setVerRegla(v => !v)}>
@@ -206,11 +132,10 @@ export function Hoy({
         </button>
       </div>
 
-      {verRegla && <p className="hoy-regla">{data?.regla || REGLA_POR_DEFECTO}</p>}
-      {aviso && <p className="hoy-aviso" role="status">{aviso}</p>}
+      {verRegla && datos && <p className="hoy-regla">{datos.regla}</p>}
 
       {isLoading && (
-        <div role="status" aria-label="Cargando tareas">
+        <div role="status" aria-label="Cargando gestiones">
           <div className="skeleton-row" />
           <div className="skeleton-row" />
         </div>
@@ -219,95 +144,26 @@ export function Hoy({
       {hasError && (
         <div className="estado-centro" role="alert">
           <div className="estado-centro__icono" aria-hidden="true">!</div>
-          <p className="estado-centro__texto">Ha ocurrido un error cargando la información, inténtalo de nuevo.</p>
-          <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => cargar()}>Reintentar</button>
+            <p className="estado-centro__texto">Ha ocurrido un error cargando la información, inténtalo de nuevo.</p>
+          <button className="btn btn-primary" style={{ width: 'auto' }} onClick={cargar}>Reintentar</button>
         </div>
       )}
 
       {isEmpty && (
         <div className="estado-centro">
           <div className="estado-centro__icono" aria-hidden="true">☕</div>
-          <p className="estado-centro__pregunta">No hay tareas programadas</p>
-          <p className="estado-centro__texto">Crea un evento y agrégale tareas para verlas aquí.</p>
+          <p className="estado-centro__pregunta">No hay gestiones para mostrar</p>
+          <p className="estado-centro__texto">Nada con este filtro por ahora.</p>
           <button className="btn btn-primary" style={{ width: 'auto' }} onClick={onCrearEvento}>Crear evento</button>
         </div>
       )}
 
       {isSuccess && (
         <>
-          {seccion('Vencidas', 'es-vencido', vencidas, 'vencida')}
+          {seccion('Vencidas', 'es-vencido', vencidas, 'vencido')}
           {seccion('Para hoy', 'es-hoy', paraHoy, 'hoy')}
-          {seccion('Próximas', '', proximas, 'proxima')}
+          {seccion('Próximas', '', proximas, 'proximo')}
         </>
-      )}
-
-      {reprogramando && (
-        <Modal
-          titulo="Reprogramar tarea"
-          onCerrar={() => setReprogramando(null)}
-          acciones={
-            <>
-              <button className="btn btn-outline" onClick={() => setReprogramando(null)}>Cancelar</button>
-              <button className="btn btn-primary" style={{ width: 'auto' }} disabled={procesandoId === reprogramando.id} onClick={guardarNuevaFecha}>
-                Guardar nueva fecha
-              </button>
-            </>
-          }
-        >
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="nueva-fecha">Nueva fecha *</label>
-            <input
-              id="nueva-fecha"
-              type="date"
-              value={nuevaFecha}
-              onChange={e => { setNuevaFecha(e.target.value); setErrorFecha(null); setErrorServidor(null); }}
-              aria-invalid={!!errorFecha}
-              aria-describedby={errorFecha ? 'nueva-fecha-error' : undefined}
-            />
-            {errorFecha && <p id="nueva-fecha-error" className="error-text" role="alert">{errorFecha}</p>}
-            {errorServidor && <p className="error-text" role="alert">{errorServidor}</p>}
-          </div>
-        </Modal>
-      )}
-
-      {posponiendo && (
-        <Modal
-          titulo="Posponer tarea"
-          onCerrar={() => setPosponiendo(null)}
-          acciones={
-            <>
-              <button className="btn btn-outline" onClick={() => setPosponiendo(null)}>Cancelar</button>
-              <button className="btn btn-primary" style={{ width: 'auto' }} disabled={procesandoId === posponiendo.id} onClick={confirmarPosponer}>
-                Posponer tarea
-              </button>
-            </>
-          }
-        >
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="nota-posponer">Motivo *</label>
-            <textarea
-              id="nota-posponer"
-              rows={3}
-              placeholder="Ej: El proveedor confirmó la entrega para la próxima semana"
-              value={nota}
-              onChange={e => { setNota(e.target.value); setErrorNota(null); }}
-              aria-invalid={!!errorNota}
-              aria-describedby={errorNota ? 'nota-posponer-error' : undefined}
-            />
-            {errorNota && <p id="nota-posponer-error" className="error-text" role="alert">{errorNota}</p>}
-          </div>
-        </Modal>
-      )}
-
-      {falloAccion && (
-        <Modal
-          titulo="Error"
-          urgente
-          onCerrar={() => setFalloAccion(false)}
-          acciones={<button className="btn btn-outline btn-outline--danger" onClick={() => setFalloAccion(false)}>Cerrar</button>}
-        >
-          Ha ocurrido un error al guardar. Inténtalo de nuevo.
-        </Modal>
       )}
     </div>
   );

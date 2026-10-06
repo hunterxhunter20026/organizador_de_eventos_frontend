@@ -3,12 +3,12 @@
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
 
 export function formatearFechaCorta(iso: string): string {
-  const [anio, mes, dia] = iso.split('-').map(Number);
+  const [anio, mes, dia] = iso.slice(0, 10).split('-').map(Number);
   return `${dia} de ${MESES[mes - 1]}`;
 }
 
 export function formatearFechaLarga(iso: string): string {
-  const [anio, mes, dia] = iso.split('-').map(Number);
+  const [anio, mes, dia] = iso.slice(0, 10).split('-').map(Number);
   return `${dia} ${MESES[mes - 1]}. ${anio}`;
 }
 
