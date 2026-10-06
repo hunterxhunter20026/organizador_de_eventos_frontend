@@ -1,3 +1,4 @@
+import { ListaTareas } from '../tareas/ListaTareas';
 import { useEffect, useState } from 'react';
 import { eventosApi, usuariosApi } from '../../api/eventosApi';
 import type { Evento, Usuario } from '../../domain/types';
@@ -266,6 +267,7 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
           Eliminar
         </button>
       </div>
+      <ListaTareas evento={evento} />
       {modales}
     </div>
   );
