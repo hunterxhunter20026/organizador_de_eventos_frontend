@@ -1,6 +1,6 @@
 // ARCHITECTURAL TRACE: Frontend — primitivas de UI compartidas, sin lógica de negocio
 
-export function Badge({ tipo, children }: { tipo: 'alta' | 'media' | 'hecho'; children: React.ReactNode }) {
+export function Badge({ tipo, children }: { tipo: 'alta' | 'media' | 'hecho' | 'pendiente'; children: React.ReactNode }) {
   return <span className={`badge badge--${tipo}`}>{children}</span>;
 }
 

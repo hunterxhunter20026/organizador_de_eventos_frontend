@@ -1,25 +1,36 @@
 import { httpRequest } from './httpClient';
-import type { Evento, Usuario } from '../domain/types';
+import type { Evento, Progreso, TipoEvento, Usuario } from '../domain/types';
 
 // ARCHITECTURAL TRACE: Frontend — cliente tipado del backend, un método por
-// endpoint REALMENTE existente en organizador_de_eventos_backend.
-// Los métodos de subtareas / vista-hoy / configuración se retiraron de aquí
-// porque esos endpoints no existen todavía en el backend — se agregarán en
-// el sprint en que se implementen, en vez de dejar llamadas que siempre
-// fallarían con 404.
+// endpoint existente en organizador_de_eventos_backend (ya completo).
+// El usuarioId ya NO se envía desde el cliente: EventoService lo asigna
+// siempre a partir del token de sesión (AuthContext), nunca del body.
+
+export interface DatosEvento {
+  nombre: string;
+  tipo?: TipoEvento;
+  clienteContacto?: string;
+  descripcion?: string;
+  fechaEvento: string;
+  lugar?: string;
+  plazoLimite?: string;
+  // Solo relevante al actualizar: EventoService guarda el objeto tal cual llega
+  // (no hace merge parcial), así que si se omite aquí el backend lo pondría en null.
+  estado?: string;
+}
 
 export const eventosApi = {
   listar: () => httpRequest<Evento[]>('/api/eventos'),
 
   obtenerPorId: (id: number) => httpRequest<Evento>(`/api/eventos/${id}`),
 
-  crear: (datos: { usuarioId: number; nombre: string; descripcion?: string; fechaEvento: string; estado?: string }) =>
+  crear: (datos: DatosEvento) =>
     httpRequest<Evento>('/api/eventos', {
       method: 'POST',
       body: JSON.stringify(datos)
     }),
 
-  actualizar: (id: number, datos: { usuarioId: number; nombre: string; descripcion?: string; fechaEvento: string; estado?: string }) =>
+  actualizar: (id: number, datos: DatosEvento) =>
     httpRequest<Evento>(`/api/eventos/${id}`, {
       method: 'PUT',
       body: JSON.stringify(datos)
@@ -31,11 +42,10 @@ export const eventosApi = {
   buscarPorNombre: (nombre: string) =>
     httpRequest<Evento[]>(`/api/eventos/buscar?nombre=${encodeURIComponent(nombre)}`),
 
-  buscarPorUsuarioId: (usuarioId: number) =>
-    httpRequest<Evento[]>(`/api/eventos/usuario/${usuarioId}`),
-
   buscarPorEstado: (estado: string) =>
-    httpRequest<Evento[]>(`/api/eventos/estado?estado=${encodeURIComponent(estado)}`)
+    httpRequest<Evento[]>(`/api/eventos/estado?estado=${encodeURIComponent(estado)}`),
+
+  progreso: (id: number) => httpRequest<Progreso>(`/api/eventos/${id}/progreso`)
 };
 
 export const usuariosApi = {

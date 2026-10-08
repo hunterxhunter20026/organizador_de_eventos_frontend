@@ -146,10 +146,13 @@ h1.title, h2.title {
 }
 
 .btn-primary {
-  background: var(--text-primary);
+  background: var(--accent-blue);
   color: #ffffff;
   width: 100%;
 }
+.btn-primary:hover:not(:disabled) { background: #1f57c9; }
+.btn-primary:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-primary:hover { background: #000000; }
 
 .btn-outline {
@@ -159,9 +162,29 @@ h1.title, h2.title {
 }
 .btn-outline:hover { background: var(--card-bg-subtle); }
 
+/* Variante Danger: blanco con borde y texto rojo; al pasar el mouse se invierte */
 .btn-outline--danger {
+  background: #ffffff;
   color: var(--danger-text);
-  border-color: var(--danger-border);
+  border: 1.5px solid var(--danger-text);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-outline--danger:hover:not(:disabled),
+.btn-outline--danger:focus-visible:not(:disabled) {
+  background: var(--danger-text);
+  border-color: var(--danger-text);
+  color: #ffffff;
+}
+
+.btn-outline--danger:focus-visible {
+  outline: 2px solid var(--danger-text);
+  outline-offset: 2px;
+}
+
+.btn-outline--danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .helper-text {
@@ -330,3 +353,265 @@ h1.title, h2.title {
   padding: 0;
   margin-bottom: 16px;
 }
+/* --- Estados de vista (carga, error, vacío) --- */
+.estado-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 32px 16px;
+}
+.estado-centro__icono {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+}
+.estado-centro__texto { margin: 8px 0 0 0; font-size: 14px; color: var(--text-secondary); }
+.estado-centro__pregunta { margin: 0 0 12px 0; font-size: 16px; font-weight: 700; }
+
+.skeleton-row {
+  height: 64px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, var(--card-bg-subtle) 25%, var(--border) 50%, var(--card-bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.2s ease-in-out infinite;
+}
+@keyframes skeleton {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Variante Atención (ámbar): avisos no bloqueantes */
+.btn-warning {
+  background: var(--badge-media-bg);
+  color: var(--badge-media-text);
+  border: 1.5px solid var(--badge-media-text);
+}
+.btn-warning:hover:not(:disabled) {
+  background: var(--badge-media-text);
+  color: #ffffff;
+}
+
+/* Campo con error */
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"] {
+  border-color: var(--danger-text);
+}
+
+/* --- Modales --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.modal__titulo { margin: 0 0 8px 0; font-size: 20px; outline: none; }
+.modal__cuerpo { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+.modal__acciones { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* --- Layout con barra lateral --- */
+.layout { min-height: 100vh; display: flex; }
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  background: #10131b;
+  border-right: 1px solid #1d2230;
+}
+.sidebar__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 28px;
+}
+.sidebar__logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+.sidebar__nombre {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.sidebar__nombre-app { color: #7cb0ff; }
+.sidebar__nav { display: flex; flex-direction: column; gap: 4px; }
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #9aa1af;
+  font: 600 14px var(--font-sans);
+  padding: 11px 14px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.sidebar__item:hover { background: #1a1f2b; color: #ffffff; }
+.sidebar__item:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.sidebar__item.is-active { background: var(--accent-blue); color: #ffffff; }
+.sidebar__footer { margin-top: auto; padding-top: 14px; border-top: 1px solid #1d2230; }
+
+.layout__main {
+  flex: 1;
+  min-width: 0;
+  background: #eef0f5;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.layout__main .card {
+  max-width: 860px;
+  box-shadow: 0 1px 3px rgba(20, 23, 31, 0.08), 0 8px 24px rgba(20, 23, 31, 0.06);
+}
+
+@media (max-width: 760px) {
+  .layout { flex-direction: column; }
+  .sidebar {
+    width: 100%; height: auto; position: static;
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+    padding: 12px; border-right: none; border-bottom: 1px solid #1d2230;
+  }
+  .sidebar__brand { padding: 0 8px 0 0; }
+  .sidebar__nav { flex-direction: row; flex-wrap: wrap; }
+  .sidebar__footer { margin: 0 0 0 auto; padding: 0; border-top: none; }
+  .layout__main { padding: 20px 12px; }
+  .layout__main .card { padding: 24px; }
+}
+
+/* --- Vista Hoy --- */
+.hoy-filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px; }
+.hoy-filtros .field { margin-bottom: 0; min-width: 150px; }
+.hoy-filtros .field--dias { min-width: 0; width: 90px; }
+.link-ayuda {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 10px 0;
+  color: var(--accent-blue);
+  font: 600 13px var(--font-sans);
+  cursor: pointer;
+}
+.link-ayuda:hover { text-decoration: underline; }
+.hoy-regla {
+  background: var(--card-bg-subtle);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 20px 0;
+}
+.hoy-aviso {
+  background: var(--badge-hecho-bg);
+  color: var(--badge-hecho-text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+.hoy-seccion { margin-bottom: 24px; }
+.hoy-seccion__titulo { display: flex; align-items: center; gap: 8px; font-size: 18px; margin: 0 0 12px 0; }
+.hoy-seccion__titulo.es-vencido { color: var(--badge-alta-text); }
+.hoy-seccion__titulo.es-hoy { color: var(--badge-media-text); }
+.contador {
+  background: var(--border);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
+}
+.es-vencido .contador { background: var(--badge-alta-bg); color: var(--badge-alta-text); }
+.es-hoy .contador { background: var(--badge-media-bg); color: var(--badge-media-text); }
+
+.hoy-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.hoy-card__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.hoy-card__nombre {
+  background: none; border: none; padding: 0; text-align: left;
+  font: 700 16px var(--font-sans); color: var(--text-primary); cursor: pointer;
+}
+.hoy-card__nombre:hover { text-decoration: underline; }
+.hoy-card__meta { margin: 6px 0 14px 0; font-size: 13px; color: var(--text-secondary); }
+.hoy-card__acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.hoy-card__acciones .btn-primary { width: auto; }
+.badge--pendiente { background: var(--border); color: var(--text-secondary); }
+
+.hoy-card--vencido { border-left: 4px solid var(--urgencia-vencida); }
+.hoy-card--hoy { border-left: 4px solid var(--urgencia-vence-hoy); }
+
+/* Textarea como los demás campos */
+.field textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  color: var(--text-primary);
+  resize: vertical;
+}
+.field textarea:focus { outline: 2px solid var(--accent-blue); outline-offset: 1px; }
+.field textarea[aria-invalid="true"] { border-color: var(--danger-text); }
+
+/* Barra de progreso: azul activo, verde vacío o completado, rojo error */
+.progress-fill--azul { background: var(--accent-blue); }
+.progress-fill--verde { background: #1f8a4c; }
+.progress-fill--rojo { background: var(--urgencia-vencida); }
+.progress-track { height: 10px; }
+.progreso-texto { margin: 6px 0 16px; font-size: 13px; font-weight: 600; }
+.progreso-texto--azul { color: var(--accent-blue); }
+.progreso-texto--verde { color: var(--badge-hecho-text); }
+.progreso-texto--rojo { color: var(--danger-text); }
+
+/* Hoy: evento al que pertenece la tarea */
+.hoy-card__titulo { font-weight: 700; font-size: 16px; }
+.hoy-card__evento {
+  background: none; border: none; padding: 0; margin-top: 4px;
+  color: var(--accent-blue); font: 600 13px var(--font-sans); cursor: pointer;
+}
+.hoy-card__evento:hover { text-decoration: underline; }
