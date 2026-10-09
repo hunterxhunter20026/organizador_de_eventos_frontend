@@ -331,6 +331,9 @@ h1.title, h2.title {
 }
 .conflicto-box__texto { font-size: 13px; margin: 0 0 6px 0; }
 .conflicto-box__acciones { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.conflicto-box__alternativas,
+.conflicto-box__resolucion { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
+.conflicto-box__resolucion .field { margin: 0; min-width: 190px; }
 
 /* --- Nueva subtarea --- */
 .nueva-subtarea-grid {
@@ -615,3 +618,76 @@ h1.title, h2.title {
   color: var(--accent-blue); font: 600 13px var(--font-sans); cursor: pointer;
 }
 .hoy-card__evento:hover { text-decoration: underline; }
+
+/* --- Login y registro: tarjeta horizontal con formulario e ilustración --- */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #e3eeff 0%, #b9d3fb 55%, #8fb6f2 100%);
+}
+
+.login-card {
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  width: 100%;
+  max-width: 980px;
+  background: var(--card-bg);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(30, 64, 120, 0.25);
+}
+
+.login-card__form {
+  padding: 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-card__imagen {
+  position: relative;
+  min-height: 440px;
+  background: #dbeafe;
+}
+.login-card__imagen img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.login-marca { margin-bottom: 28px; }
+.login-marca__nombre {
+  margin: 0 0 6px 0;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.login-marca__nombre span { color: var(--accent-blue); }
+.login-marca__lema { margin: 0; font-size: 15px; color: var(--text-secondary); }
+
+.login-subtitulo { margin: 0 0 16px 0; font-size: 20px; }
+
+.login-aviso {
+  background: var(--badge-hecho-bg);
+  color: var(--badge-hecho-text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+/* Móvil: la ilustración pasa arriba, más baja, y el formulario debajo */
+@media (max-width: 760px) {
+  .login-card { grid-template-columns: 1fr; }
+  .login-card__imagen { order: -1; min-height: 150px; }
+  .login-card__form { padding: 28px 24px; }
+  .login-marca__nombre { font-size: 30px; }
+}
