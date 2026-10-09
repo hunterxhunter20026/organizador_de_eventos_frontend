@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { tareasApi } from '../../api/tareasApi';
 import { ApiError } from '../../domain/types';
 import type { TareaLogistica } from '../../domain/types';
+import { formatearFechaCorta } from '../../ui/format';
 import { Modal } from '../../ui/Modal';
-import type { Conflicto } from '../../ui/ConflictoBox';
+import type { Conflicto, ResolucionConflicto } from '../../ui/ConflictoBox';
 
 // ARCHITECTURAL TRACE: Frontend feature — acciones sobre una gestión logística
 // (US-06 ejecutar, US-07/US-08 reprogramar con detección de sobrecarga, US-09
@@ -39,7 +40,34 @@ export function TareaAcciones({
   function manejarError(err: unknown) {
     setModo(null);
     if (err instanceof ApiError && err.conflicto) {
-      onConflicto({ mensaje: err.message, opciones: err.conflicto.opciones });
+      onConflicto({
+        ...err.conflicto,
+        mensaje: err.message,
+        fechaPropuesta: nuevaFecha,
+        horasActuales: tarea.horasEstimadas,
+        tipo: 'gestionar',
+        tareaId: tarea.id,
+        resolver: async (resolucion: ResolucionConflicto) => {
+          if (resolucion.tipo === 'fecha') {
+            await tareasApi.reprogramar(tarea.id, resolucion.valor);
+            onCambio();
+            return `"${tarea.titulo}" quedó programada para ${formatearFechaCorta(resolucion.valor)}.`;
+          }
+          if (resolucion.tipo === 'horas') {
+            await tareasApi.actualizar(tarea.id, {
+              titulo: tarea.titulo,
+              descripcion: tarea.descripcion ?? undefined,
+              fechaLimite: nuevaFecha,
+              horasEstimadas: resolucion.valor
+            });
+            onCambio();
+            return `Se actualizaron las horas de "${tarea.titulo}" a ${resolucion.valor} h.`;
+          }
+          await tareasApi.marcarEstado(tarea.id, 'Pospuesta');
+          onCambio();
+          return `"${tarea.titulo}" quedó pospuesta.`;
+        }
+      });
     } else {
       setFalloMensaje(err instanceof Error ? err.message : 'Ha ocurrido un error. Inténtalo de nuevo.');
     }

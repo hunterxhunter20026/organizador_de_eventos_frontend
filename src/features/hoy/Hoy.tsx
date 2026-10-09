@@ -29,6 +29,7 @@ export function Hoy({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [verRegla, setVerRegla] = useState(true);
   const [conflicto, setConflicto] = useState<(Conflicto & { tareaId: number }) | null>(null);
+  const [exitoResolucion, setExitoResolucion] = useState<string | null>(null);
 
   useEffect(() => { eventosApi.listar().then(setEventos).catch(() => setEventos([])); }, []);
 
@@ -80,14 +81,21 @@ export function Hoy({
         </p>
 
         {conflicto?.tareaId === tarea.id && (
-          <ConflictoBox conflicto={conflicto} onCerrar={() => setConflicto(null)} />
+          <ConflictoBox
+            conflicto={conflicto}
+            onCerrar={() => setConflicto(null)}
+            onResuelto={mensaje => { setConflicto(null); setExitoResolucion(mensaje); }}
+          />
         )}
 
         {estadoFiltro === 'Pendiente' && (
           <TareaAcciones
             tarea={tarea}
             onCambio={cargar}
-            onConflicto={c => setConflicto(c ? { ...c, tareaId: tarea.id } : null)}
+            onConflicto={c => {
+              setExitoResolucion(null);
+              setConflicto(c ? { ...c, tareaId: tarea.id } : null);
+            }}
           />
         )}
       </article>
@@ -110,6 +118,7 @@ export function Hoy({
     <div className="card">
       <h1 className="title">Hoy</h1>
       <p className="subtitle">Lo que necesita tu atención, de lo más urgente a lo más lejano.</p>
+      {exitoResolucion && <p className="hoy-aviso" role="status">{exitoResolucion}</p>}
 
       <div className="hoy-filtros">
         <div className="field">

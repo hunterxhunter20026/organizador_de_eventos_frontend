@@ -7,7 +7,7 @@ import { formatearFechaLarga, formatearFechaCorta } from '../../ui/format';
 import { Badge, ProgressBar } from '../../ui/primitives';
 import { Modal } from '../../ui/Modal';
 import { ConflictoBox } from '../../ui/ConflictoBox';
-import type { Conflicto } from '../../ui/ConflictoBox';
+import type { Conflicto, ResolucionConflicto } from '../../ui/ConflictoBox';
 import { TareaAcciones } from '../tareas/TareaAcciones';
 import { TIPOS, fechaValida } from './FormularioEvento';
 
@@ -46,6 +46,7 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
   const [cargandoTareas, setCargandoTareas] = useState(true);
   const [errorTareas, setErrorTareas] = useState(false);
   const [conflicto, setConflicto] = useState<Conflicto | null>(null);
+  const [exitoGestion, setExitoGestion] = useState<string | null>(null);
 
   // Formulario "nueva gestión"
   const [nuevoTitulo, setNuevoTitulo] = useState('');
@@ -149,6 +150,7 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
   async function crearTarea(e: React.FormEvent) {
     e.preventDefault();
     setConflicto(null);
+    setExitoGestion(null);
     const nuevos = validarTarea();
     setErroresTarea(nuevos);
     if (Object.keys(nuevos).length > 0) return;
@@ -160,7 +162,27 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
       recargarTareasYProgreso();
     } catch (err) {
       if (err instanceof ApiError && err.conflicto) {
-        setConflicto({ mensaje: err.message, opciones: err.conflicto.opciones });
+        setConflicto({
+          ...err.conflicto,
+          mensaje: err.message,
+          fechaPropuesta: nuevaFecha,
+          horasActuales: Number(nuevasHoras),
+          tipo: 'crear',
+          resolver: async (resolucion: ResolucionConflicto) => {
+            const fechaLimite = resolucion.tipo === 'fecha' ? resolucion.valor : nuevaFecha;
+            const horasEstimadas = resolucion.tipo === 'horas' ? resolucion.valor : Number(nuevasHoras);
+            await tareasApi.crear(evento.id, {
+              titulo: nuevoTitulo.trim(),
+              fechaLimite,
+              horasEstimadas
+            });
+            setNuevoTitulo('');
+            setNuevaFecha('');
+            setNuevasHoras('1');
+            recargarTareasYProgreso();
+            return `La gestión "${nuevoTitulo.trim()}" se agregó para ${formatearFechaCorta(fechaLimite)}.`;
+          }
+        });
       } else {
         setFalloTarea(err instanceof Error ? err.message : 'No pudimos crear la gestión.');
       }
@@ -356,6 +378,7 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
       )}
 
       <h3 style={{ fontSize: 16, margin: '0 0 12px 0' }}>Gestiones logísticas</h3>
+      {exitoGestion && <p className="hoy-aviso" role="status">{exitoGestion}</p>}
 
       {cargandoTareas && (
         <div role="status" aria-label="Cargando gestiones">
@@ -388,13 +411,31 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
             {formatearFechaCorta(tarea.fechaLimite)} · {tarea.horasEstimadas}h
             {tarea.notaEjecucion ? ` · "${tarea.notaEjecucion}"` : ''}
           </p>
+          {conflicto?.tipo === 'gestionar' && conflicto.tareaId === tarea.id && (
+            <ConflictoBox
+              conflicto={conflicto}
+              onCerrar={() => setConflicto(null)}
+              onResuelto={mensaje => { setConflicto(null); setExitoGestion(mensaje); }}
+            />
+          )}
           {tarea.estado === 'Pendiente' && (
-            <TareaAcciones tarea={tarea} conEliminar onCambio={recargarTareasYProgreso} onConflicto={setConflicto} />
+            <TareaAcciones
+              tarea={tarea}
+              conEliminar
+              onCambio={recargarTareasYProgreso}
+              onConflicto={valor => { setExitoGestion(null); setConflicto(valor); }}
+            />
           )}
         </article>
       ))}
 
-      {conflicto && <ConflictoBox conflicto={conflicto} onCerrar={() => setConflicto(null)} />}
+      {conflicto?.tipo === 'crear' && (
+        <ConflictoBox
+          conflicto={conflicto}
+          onCerrar={() => setConflicto(null)}
+          onResuelto={mensaje => { setConflicto(null); setExitoGestion(mensaje); }}
+        />
+      )}
 
       <form onSubmit={crearTarea} noValidate style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
         <div className="nueva-subtarea-grid" style={{ marginTop: 0 }}>
