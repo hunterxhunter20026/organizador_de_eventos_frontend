@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { eventosApi } from '../../api/eventosApi';
 import type { Evento } from '../../domain/types';
 import { formatearFechaLarga } from '../../ui/format';
-import { FormularioEvento } from './FormularioEvento';
+import { IconoBasura, IconoEngranaje } from '../../ui/Iconos';
+import { Modal } from '../../ui/Modal';
+import { FormularioEvento, TIPOS } from './FormularioEvento';
 
 // ARCHITECTURAL TRACE: Frontend feature — eventos. Traza: US-004
 // Estados según la Guía de Diseño: isLoading, hasError, isEmpty, isSuccess.
@@ -11,6 +13,9 @@ export function MisEventos({ onAbrirEvento, abrirFormulario = false }: { onAbrir
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(abrirFormulario);
+  const [eventoAEliminar, setEventoAEliminar] = useState<Evento | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
   function recargar() {
     setIsLoading(true);
@@ -24,13 +29,40 @@ export function MisEventos({ onAbrirEvento, abrirFormulario = false }: { onAbrir
 
   useEffect(() => { recargar(); }, []);
 
+  async function eliminarEvento() {
+    if (!eventoAEliminar) return;
+    setEliminando(true);
+    try {
+      await eventosApi.eliminar(eventoAEliminar.id);
+      setEventos(prev => prev.filter(evento => evento.id !== eventoAEliminar.id));
+      setEventoAEliminar(null);
+    } catch (err) {
+      setEventoAEliminar(null);
+      setErrorEliminar(err instanceof Error ? err.message : 'No se pudo eliminar el evento.');
+    } finally {
+      setEliminando(false);
+    }
+  }
+
   const isEmpty = !isLoading && !hasError && eventos.length === 0;
   const isSuccess = !isLoading && !hasError && eventos.length > 0;
 
   return (
     <div className="card">
-      <h1 className="title">Mis eventos</h1>
-      <p className="subtitle">Eventos registrados en el sistema.</p>
+      <div className="eventos-header">
+        <div>
+          <h1 className="title">Mis eventos</h1>
+          <p className="subtitle">Eventos registrados en el sistema.</p>
+        </div>
+        {!mostrarFormulario && !hasError && (
+          <button
+            className="btn btn-primary eventos-header__crear"
+            onClick={() => setMostrarFormulario(true)}
+          >
+            Crear evento
+          </button>
+        )}
+      </div>
 
       {/* Carga: skeletons, sin saltos de layout */}
       {isLoading && (
@@ -58,38 +90,46 @@ export function MisEventos({ onAbrirEvento, abrirFormulario = false }: { onAbrir
           <div className="estado-centro__icono" aria-hidden="true">📖</div>
           <p className="estado-centro__texto">No tienes eventos creados.</p>
           <p className="estado-centro__pregunta">¿Deseas crear tu primer evento?</p>
-          <button
-            className="btn btn-primary"
-            style={{ width: 'auto' }}
-            onClick={() => setMostrarFormulario(true)}
-          >
-            Crear evento
-          </button>
         </div>
       )}
 
       {/* Éxito: listado */}
       {isSuccess &&
         eventos.map(evento => (
-          <div
+          <article
             key={evento.id}
             className="evento-row"
-            role="button"
-            tabIndex={0}
-            onClick={() => onAbrirEvento(evento)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onAbrirEvento(evento);
-              }
-            }}
           >
-            <div className="evento-row__header">
+            <button className="evento-row__abrir" onClick={() => onAbrirEvento(evento)}>
               <span className="evento-row__nombre">{evento.nombre}</span>
-              <span className="evento-row__fecha">{formatearFechaLarga(evento.fechaEvento)}</span>
+              <span className="evento-row__datos">
+                <span><strong>Estado:</strong> {evento.estado || 'Sin estado'}</span>
+                <span><strong>Fecha del evento:</strong> {formatearFechaLarga(evento.fechaEvento)}</span>
+                <span><strong>Tipo de evento:</strong> {TIPOS.find(tipo => tipo.valor === evento.tipo)?.etiqueta ?? 'Sin especificar'}</span>
+                <span><strong>Cliente:</strong> {evento.clienteContacto || 'Sin especificar'}</span>
+                <span><strong>Lugar:</strong> {evento.lugar || 'Sin especificar'}</span>
+                <span><strong>Plazo límite:</strong> {evento.plazoLimite ? formatearFechaLarga(evento.plazoLimite) : 'Sin especificar'}</span>
+              </span>
+            </button>
+            <div className="evento-row__acciones" aria-label={`Acciones para ${evento.nombre}`}>
+              <button
+                className="evento-row__accion evento-row__accion--eliminar"
+                aria-label={`Eliminar ${evento.nombre}`}
+                title="Eliminar evento"
+                onClick={() => setEventoAEliminar(evento)}
+              >
+                <IconoBasura />
+              </button>
+              <button
+                className="evento-row__accion"
+                aria-label={`Editar ${evento.nombre}`}
+                title="Editar evento"
+                onClick={() => onAbrirEvento(evento)}
+              >
+                <IconoEngranaje />
+              </button>
             </div>
-            <div className="evento-row__fecha">{evento.estado ?? 'Sin estado'}</div>
-          </div>
+          </article>
         ))}
 
       {mostrarFormulario ? (
@@ -100,17 +140,36 @@ export function MisEventos({ onAbrirEvento, abrirFormulario = false }: { onAbrir
           }}
           onCancelar={() => setMostrarFormulario(false)}
         />
-      ) : (
-        // Con la lista vacía el CTA ya está en el estado vacío; en error no tiene sentido crear
-        isSuccess && (
-  <button
-    className="btn btn-primary"
-    style={{ width: 'auto', marginTop: 8 }}
-    onClick={() => setMostrarFormulario(true)}
-  >
-    Crear evento
-  </button>
-)
+      ) : null}
+
+      {eventoAEliminar && (
+        <Modal
+          titulo="¿Eliminar evento?"
+          onCerrar={() => setEventoAEliminar(null)}
+          acciones={
+            <>
+              <button className="btn btn-outline" onClick={() => setEventoAEliminar(null)}>Cancelar</button>
+              <button className="btn btn-outline btn-outline--danger" onClick={eliminarEvento} disabled={eliminando}>
+                {eliminando ? 'Eliminando…' : 'Eliminar evento'}
+              </button>
+            </>
+          }
+        >
+          Se eliminará el evento y todas sus tareas. Esta acción no se puede deshacer.
+        </Modal>
+      )}
+
+      {errorEliminar && (
+        <Modal
+          titulo="Error"
+          urgente
+          onCerrar={() => setErrorEliminar(null)}
+          acciones={
+            <button className="btn btn-outline btn-outline--danger" onClick={() => setErrorEliminar(null)}>Cerrar</button>
+          }
+        >
+          {errorEliminar}
+        </Modal>
       )}
     </div>
   );

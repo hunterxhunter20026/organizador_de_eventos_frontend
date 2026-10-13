@@ -45,6 +45,9 @@ export default function App() {
     setCrearAlEntrar(true);
     setVista('eventos');
   }
+  function abrirEvento(evento: Evento) {
+    setEventoAbierto(evento);
+  }
 
   return (
     <div className="layout">
@@ -77,13 +80,16 @@ export default function App() {
         </aside>
       <main className="layout__main">
         {eventoAbierto ? (
-          <EventoDetalle eventoInicial={eventoAbierto} onVolver={() => setEventoAbierto(null)} />
+          <EventoDetalle
+            eventoInicial={eventoAbierto}
+            onVolver={() => setEventoAbierto(null)}
+          />
         ) : vista === 'eventos' ? (
-          <MisEventos onAbrirEvento={setEventoAbierto} abrirFormulario={crearAlEntrar} />
+          <MisEventos onAbrirEvento={abrirEvento} abrirFormulario={crearAlEntrar} />
        // ) : vista === 'usuarios' ? (
         //  <GestionUsuarios />
         ) : vista === 'hoy' ? (
-          <Hoy onAbrirEvento={setEventoAbierto} onCrearEvento={irACrearEvento} />
+          <Hoy onAbrirEvento={evento => abrirEvento(evento)} onCrearEvento={irACrearEvento} />
         ) : (
           <Configuracion />
         )}

@@ -13,6 +13,7 @@ export type Conflicto = ConflictoSobrecarga & {
   horasActuales: number;
   tipo: 'crear' | 'gestionar';
   tareaId?: number;
+  puedePosponer?: boolean;
   resolver: (resolucion: ResolucionConflicto) => Promise<string>;
 };
 
@@ -84,7 +85,7 @@ export function ConflictoBox({
           <button className="btn btn-outline" disabled={procesando} onClick={() => { setAlternativa('horas'); setError(null); }}>
             Reducir horas estimadas
           </button>
-          {conflicto.tipo === 'gestionar' && conflicto.opciones.includes('Posponer la gestión') && (
+          {conflicto.tipo === 'gestionar' && conflicto.puedePosponer !== false && conflicto.opciones.includes('Posponer la gestión') && (
             <button className="btn btn-outline" disabled={procesando} onClick={() => { setAlternativa('posponer'); setError(null); }}>
               Posponer gestión
             </button>

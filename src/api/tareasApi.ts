@@ -7,6 +7,7 @@ import type { EstadoTarea, TareaLogistica } from '../domain/types';
 export interface DatosTarea {
   titulo: string;
   descripcion?: string;
+  icono?: string;
   fechaLimite: string;
   horasEstimadas: number;
 }
@@ -38,9 +39,9 @@ export const tareasApi = {
     }),
 
   // Lanza ApiError con `conflicto` poblado si el nuevo plazo supera el límite diario (US-07/US-08).
-  reprogramar: (id: number, nuevoPlazo: string) =>
+  reprogramar: (id: number, nuevoPlazo: string, horasEstimadas: number) =>
     httpRequest<TareaLogistica>(`/api/tareas/${id}/reprogramar`, {
       method: 'PUT',
-      body: JSON.stringify({ nuevoPlazo })
+      body: JSON.stringify({ nuevoPlazo, horasEstimadas })
     })
 };

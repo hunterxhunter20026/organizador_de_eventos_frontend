@@ -226,18 +226,93 @@ h1.title, h2.title {
 }
 
 /* --- Event list (Mis eventos) --- */
+.eventos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.eventos-header__crear { width: auto; flex-shrink: 0; }
 .evento-row {
   background: var(--card-bg-subtle);
   border-radius: 14px;
   padding: 18px 20px;
   margin-bottom: 12px;
-  cursor: pointer;
   border: 1px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
 .evento-row:hover { border-color: var(--border); }
-.evento-row__header { display: flex; justify-content: space-between; align-items: baseline; }
-.evento-row__nombre { font-weight: 700; font-size: 16px; }
+.evento-row__abrir {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.evento-row__abrir:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.evento-row__header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.evento-row__nombre { display: block; font-weight: 700; font-size: 16px; margin-bottom: 8px; }
 .evento-row__fecha { color: var(--text-secondary); font-size: 13px; }
+.evento-row__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.evento-row__datos strong { color: var(--text-primary); }
+.evento-row__acciones { display: flex; flex-shrink: 0; gap: 8px; }
+.evento-row__accion {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.evento-row__accion:hover { background: var(--card-bg-subtle); color: var(--text-primary); }
+.evento-row__accion--eliminar:hover { color: var(--danger-text); border-color: var(--danger-border); }
+.evento-row__accion:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.evento-detalle__barra-superior {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.evento-detalle__acciones { display: flex; gap: 8px; }
+.evento-detalle__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 12px 0 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.evento-detalle__datos strong { color: var(--text-primary); }
+
+@media (max-width: 520px) {
+  .eventos-header { align-items: flex-start; }
+  .evento-row { padding: 16px; }
+  .evento-row__datos { flex-direction: column; gap: 4px; }
+  .evento-detalle__barra-superior { align-items: flex-start; flex-direction: column; }
+  .evento-detalle__datos { flex-direction: column; gap: 4px; }
+}
 
 /* --- Subtarea rows (detalle de evento) --- */
 .subtarea-row {
@@ -576,11 +651,32 @@ h1.title, h2.title {
 .hoy-card__nombre {
   background: none; border: none; padding: 0; text-align: left;
   font: 700 16px var(--font-sans); color: var(--text-primary); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 10px;
 }
-.hoy-card__nombre:hover { text-decoration: underline; }
+.hoy-card__nombre--estatico { cursor: default; }
+.hoy-card__nombre--estatico:hover { text-decoration: none; }
+.gestion-icono {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  font-size: 25px;
+  line-height: 1;
+}
+.hoy-card__nombre:hover { text-decoration: none; }
 .hoy-card__meta { margin: 6px 0 14px 0; font-size: 13px; color: var(--text-secondary); }
 .hoy-card__acciones { display: flex; gap: 8px; flex-wrap: wrap; }
 .hoy-card__acciones .btn-primary { width: auto; }
+.nueva-gestion__contenedor { display: flex; justify-content: center; margin-top: 20px; }
+.nueva-gestion__abrir { width: auto; min-width: 210px; }
+.nueva-gestion__abrir span { font-size: 20px; margin-right: 4px; vertical-align: -1px; }
+.nueva-gestion__formulario { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nueva-gestion__nota { margin-top: 16px; }
+.nueva-gestion__nombre-linea { display: flex; gap: 8px; }
+.nueva-gestion__nombre-linea input { min-width: 0; flex: 1; }
+.nueva-gestion__nombre-linea select { width: 64px; flex: 0 0 64px; }
+.nueva-gestion__acciones { display: flex; gap: 8px; align-items: center; }
 .badge--pendiente { background: var(--border); color: var(--text-secondary); }
 
 .hoy-card--vencido { border-left: 4px solid var(--urgencia-vencida); }
