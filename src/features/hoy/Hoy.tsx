@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { hoyApi } from '../../api/hoyApi';
 import { eventosApi } from '../../api/eventosApi';
-import type { EstadoTarea, Evento, HoyResponse, TareaLogistica } from '../../domain/types';
+import type { Evento, HoyResponse, TareaLogistica } from '../../domain/types';
 import { formatearFechaCorta } from '../../ui/format';
 import { Badge } from '../../ui/primitives';
 import { ConflictoBox } from '../../ui/ConflictoBox';
@@ -24,7 +24,7 @@ export function Hoy({
   const [datos, setDatos] = useState<HoyResponse | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [eventoFiltro, setEventoFiltro] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState<EstadoTarea>('Pendiente');
+  const [estadoFiltro, setEstadoFiltro] = useState<string>('Activas');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [verRegla, setVerRegla] = useState(true);
@@ -69,15 +69,21 @@ export function Hoy({
       <article key={tarea.id} className={`hoy-card hoy-card--${tipo}`}>
         <div className="hoy-card__header">
           {evento ? (
-            <button className="hoy-card__nombre" title="Abrir evento" onClick={() => onAbrirEvento(evento)}>{tarea.titulo}</button>
+            <button className="hoy-card__nombre" onClick={() => onAbrirEvento(evento)}>
+              <span className="gestion-icono" aria-hidden="true">{tarea.icono || '📌'}</span>
+              {tarea.titulo}
+            </button>
           ) : (
-            <span className="hoy-card__nombre">{tarea.titulo}</span>
+            <span className="hoy-card__nombre">
+              <span className="gestion-icono" aria-hidden="true">{tarea.icono || '📌'}</span>
+              {tarea.titulo}
+            </span>
           )}
           {badge}
         </div>
         <p className="hoy-card__meta">
           {evento?.nombre ?? `Evento #${tarea.eventoId}`} · {formatearFechaCorta(tarea.fechaLimite)} · {tarea.horasEstimadas}h
-          {tarea.notaEjecucion ? ` · "${tarea.notaEjecucion}"` : ''}
+          {tarea.estado === 'Pospuesta' && tarea.notaEjecucion ? ` · Pospuesta por: ${tarea.notaEjecucion}` : ''}
         </p>
 
         {conflicto?.tareaId === tarea.id && (
@@ -88,7 +94,7 @@ export function Hoy({
           />
         )}
 
-        {estadoFiltro === 'Pendiente' && (
+        {(tarea.estado === 'Pendiente' || tarea.estado === 'Pospuesta') && (
           <TareaAcciones
             tarea={tarea}
             onCambio={cargar}
@@ -130,7 +136,8 @@ export function Hoy({
         </div>
         <div className="field">
           <label htmlFor="hoy-estado">Estado</label>
-          <select id="hoy-estado" value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value as EstadoTarea)}>
+          <select id="hoy-estado" value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value)}>
+            <option value="Activas">Pendientes y pospuestas</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Completada">Completada</option>
             <option value="Pospuesta">Pospuesta</option>
