@@ -7,8 +7,9 @@ import { formatearFechaLarga, formatearFechaCorta } from '../../ui/format';
 import { Badge, ProgressBar } from '../../ui/primitives';
 import { Modal } from '../../ui/Modal';
 import { ConflictoBox } from '../../ui/ConflictoBox';
-import type { Conflicto } from '../../ui/ConflictoBox';
+import type { Conflicto, ResolucionConflicto } from '../../ui/ConflictoBox';
 import { TareaAcciones } from '../tareas/TareaAcciones';
+import { ICONOS_GESTION } from '../tareas/iconosGestion';
 import { TIPOS, fechaValida } from './FormularioEvento';
 
 // ARCHITECTURAL TRACE: Frontend feature — detalle de evento (US-01, US-02,
@@ -46,11 +47,14 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
   const [cargandoTareas, setCargandoTareas] = useState(true);
   const [errorTareas, setErrorTareas] = useState(false);
   const [conflicto, setConflicto] = useState<Conflicto | null>(null);
+  const [exitoGestion, setExitoGestion] = useState<string | null>(null);
 
   // Formulario "nueva gestión"
   const [nuevoTitulo, setNuevoTitulo] = useState('');
   const [nuevaFecha, setNuevaFecha] = useState('');
   const [nuevasHoras, setNuevasHoras] = useState('1');
+  const [nuevoIcono, setNuevoIcono] = useState('📌');
+  const [mostrarFormularioTarea, setMostrarFormularioTarea] = useState(false);
   const [erroresTarea, setErroresTarea] = useState<ErroresTarea>({});
   const [creandoTarea, setCreandoTarea] = useState(false);
   const [falloTarea, setFalloTarea] = useState<string | null>(null);
@@ -149,18 +153,45 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
   async function crearTarea(e: React.FormEvent) {
     e.preventDefault();
     setConflicto(null);
+    setExitoGestion(null);
     const nuevos = validarTarea();
     setErroresTarea(nuevos);
     if (Object.keys(nuevos).length > 0) return;
 
     setCreandoTarea(true);
     try {
-      await tareasApi.crear(evento.id, { titulo: nuevoTitulo.trim(), fechaLimite: nuevaFecha, horasEstimadas: Number(nuevasHoras) });
-      setNuevoTitulo(''); setNuevaFecha(''); setNuevasHoras('1');
+      await tareasApi.crear(evento.id, {
+        titulo: nuevoTitulo.trim(),
+        icono: nuevoIcono,
+        fechaLimite: nuevaFecha,
+        horasEstimadas: Number(nuevasHoras)
+      });
+      setNuevoTitulo(''); setNuevaFecha(''); setNuevasHoras('1'); setNuevoIcono('📌');
+      setMostrarFormularioTarea(false);
       recargarTareasYProgreso();
     } catch (err) {
       if (err instanceof ApiError && err.conflicto) {
-        setConflicto({ mensaje: err.message, opciones: err.conflicto.opciones });
+        setConflicto({
+          ...err.conflicto,
+          mensaje: err.message,
+          fechaPropuesta: nuevaFecha,
+          horasActuales: Number(nuevasHoras),
+          tipo: 'crear',
+          resolver: async (resolucion: ResolucionConflicto) => {
+            const fechaLimite = resolucion.tipo === 'fecha' ? resolucion.valor : nuevaFecha;
+            const horasEstimadas = resolucion.tipo === 'horas' ? resolucion.valor : Number(nuevasHoras);
+            await tareasApi.crear(evento.id, {
+              titulo: nuevoTitulo.trim(),
+              icono: nuevoIcono,
+              fechaLimite,
+              horasEstimadas
+            });
+            setNuevoTitulo(''); setNuevaFecha(''); setNuevasHoras('1'); setNuevoIcono('📌');
+            setMostrarFormularioTarea(false);
+            recargarTareasYProgreso();
+            return `La gestión "${nuevoTitulo.trim()}" se agregó para ${formatearFechaCorta(fechaLimite)}.`;
+          }
+        });
       } else {
         setFalloTarea(err instanceof Error ? err.message : 'No pudimos crear la gestión.');
       }
@@ -333,21 +364,25 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
 
   return (
     <div className="card">
-      <button className="btn btn-outline" style={{ marginBottom: 16 }} onClick={onVolver}>
-        Volver a eventos
-      </button>
-      <h2 className="title">{evento.nombre}</h2>
-      <p className="subtitle">
-        {formatearFechaLarga(evento.fechaEvento)} · {evento.estado ?? 'Sin estado'}
-        {evento.lugar ? ` · ${evento.lugar}` : ''}
-        {evento.clienteContacto ? ` · ${evento.clienteContacto}` : ''}
-      </p>
-      {evento.descripcion && <p className="subtitle">{evento.descripcion}</p>}
-
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, marginBottom: 20 }}>
-        <button className="btn btn-outline" onClick={empezarEdicion}>Editar</button>
-        <button className="btn btn-outline btn-outline--danger" onClick={() => setConfirmando(true)}>Eliminar</button>
+      <div className="evento-detalle__barra-superior">
+        <button className="btn btn-outline" onClick={onVolver}>
+          <span aria-hidden="true">←</span> Volver a eventos
+        </button>
+        <div className="evento-detalle__acciones">
+          <button className="btn btn-outline" onClick={empezarEdicion}>Editar</button>
+          <button className="btn btn-outline btn-outline--danger" onClick={() => setConfirmando(true)}>Eliminar</button>
+        </div>
       </div>
+      <h2 className="title">{evento.nombre}</h2>
+      <div className="evento-detalle__datos">
+        <span><strong>Estado:</strong> {evento.estado || 'Sin estado'}</span>
+        <span><strong>Fecha del evento:</strong> {formatearFechaLarga(evento.fechaEvento)}</span>
+        <span><strong>Tipo de evento:</strong> {TIPOS.find(tipo => tipo.valor === evento.tipo)?.etiqueta ?? 'Sin especificar'}</span>
+        <span><strong>Cliente:</strong> {evento.clienteContacto || 'Sin especificar'}</span>
+        <span><strong>Lugar:</strong> {evento.lugar || 'Sin especificar'}</span>
+        <span><strong>Plazo límite:</strong> {evento.plazoLimite ? formatearFechaLarga(evento.plazoLimite) : 'Sin especificar'}</span>
+      </div>
+      {evento.descripcion && <p className="subtitle">{evento.descripcion}</p>}
 
       {progreso && (
         <div style={{ marginBottom: 20 }}>
@@ -356,6 +391,7 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
       )}
 
       <h3 style={{ fontSize: 16, margin: '0 0 12px 0' }}>Gestiones logísticas</h3>
+      {exitoGestion && <p className="hoy-aviso" role="status">{exitoGestion}</p>}
 
       {cargandoTareas && (
         <div role="status" aria-label="Cargando gestiones">
@@ -379,68 +415,117 @@ export function EventoDetalle({ eventoInicial, onVolver }: { eventoInicial: Even
       {!cargandoTareas && !errorTareas && tareas.map(tarea => (
         <article key={tarea.id} className="hoy-card">
           <div className="hoy-card__header">
-            <span className="hoy-card__nombre">{tarea.titulo}</span>
+            <span className="hoy-card__nombre hoy-card__nombre--estatico">
+              <span className="gestion-icono" aria-hidden="true">{tarea.icono || '📌'}</span>
+              {tarea.titulo}
+            </span>
             {tarea.estado === 'Completada' ? <Badge tipo="hecho">Completada</Badge>
               : tarea.estado === 'Pospuesta' ? <Badge tipo="media">Pospuesta</Badge>
               : <Badge tipo="pendiente">Pendiente</Badge>}
           </div>
           <p className="hoy-card__meta">
             {formatearFechaCorta(tarea.fechaLimite)} · {tarea.horasEstimadas}h
-            {tarea.notaEjecucion ? ` · "${tarea.notaEjecucion}"` : ''}
+            {tarea.estado === 'Pospuesta' && tarea.notaEjecucion ? ` · Pospuesta por: ${tarea.notaEjecucion}` : ''}
           </p>
-          {tarea.estado === 'Pendiente' && (
-            <TareaAcciones tarea={tarea} conEliminar onCambio={recargarTareasYProgreso} onConflicto={setConflicto} />
+          {conflicto?.tipo === 'gestionar' && conflicto.tareaId === tarea.id && (
+            <ConflictoBox
+              conflicto={conflicto}
+              onCerrar={() => setConflicto(null)}
+              onResuelto={mensaje => { setConflicto(null); setExitoGestion(mensaje); }}
+            />
           )}
+          <TareaAcciones
+            tarea={tarea}
+            conEliminar
+            conEditar
+            onCambio={recargarTareasYProgreso}
+            onConflicto={valor => { setExitoGestion(null); setConflicto(valor); }}
+          />
         </article>
       ))}
 
-      {conflicto && <ConflictoBox conflicto={conflicto} onCerrar={() => setConflicto(null)} />}
+      {conflicto?.tipo === 'crear' && (
+        <ConflictoBox
+          conflicto={conflicto}
+          onCerrar={() => setConflicto(null)}
+          onResuelto={mensaje => { setConflicto(null); setExitoGestion(mensaje); }}
+        />
+      )}
 
-      <form onSubmit={crearTarea} noValidate style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-        <div className="nueva-subtarea-grid" style={{ marginTop: 0 }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tarea-titulo">Nueva gestión *</label>
-            <input
-              id="tarea-titulo"
-              placeholder="Ej: Reservar salón"
-              value={nuevoTitulo}
-              onChange={e => { setNuevoTitulo(e.target.value); quitarErrorTarea('titulo'); }}
-              aria-invalid={!!erroresTarea.titulo}
-              aria-describedby={erroresTarea.titulo ? 'tarea-titulo-error' : undefined}
-            />
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tarea-fecha">Plazo *</label>
-            <input
-              id="tarea-fecha"
-              type="date"
-              value={nuevaFecha}
-              onChange={e => { setNuevaFecha(e.target.value); quitarErrorTarea('fecha'); }}
-              aria-invalid={!!erroresTarea.fecha}
-              aria-describedby={erroresTarea.fecha ? 'tarea-fecha-error' : undefined}
-            />
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tarea-horas">Horas *</label>
-            <input
-              id="tarea-horas"
-              type="number"
-              min={0.5}
-              step={0.5}
-              value={nuevasHoras}
-              onChange={e => { setNuevasHoras(e.target.value); quitarErrorTarea('horas'); }}
-              aria-invalid={!!erroresTarea.horas}
-              aria-describedby={erroresTarea.horas ? 'tarea-horas-error' : undefined}
-            />
-          </div>
-          <button className="btn btn-primary" style={{ width: 'auto' }} type="submit" disabled={creandoTarea}>
-            {creandoTarea ? 'Agregando…' : '+ Agregar'}
+      {!mostrarFormularioTarea ? (
+        <div className="nueva-gestion__contenedor">
+          <button
+            className="btn btn-primary nueva-gestion__abrir"
+            type="button"
+            onClick={() => setMostrarFormularioTarea(true)}
+          >
+            <span aria-hidden="true">+</span> Agregar gestión
           </button>
         </div>
-        {erroresTarea.titulo && <p id="tarea-titulo-error" className="error-text" role="alert" style={{ marginTop: 8 }}>{erroresTarea.titulo}</p>}
-        {erroresTarea.fecha && <p id="tarea-fecha-error" className="error-text" role="alert" style={{ marginTop: 8 }}>{erroresTarea.fecha}</p>}
-        {erroresTarea.horas && <p id="tarea-horas-error" className="error-text" role="alert" style={{ marginTop: 8 }}>{erroresTarea.horas}</p>}
-      </form>
+      ) : (
+        <form onSubmit={crearTarea} noValidate className="nueva-gestion__formulario">
+          <div className="nueva-subtarea-grid" style={{ marginTop: 0 }}>
+            <div className="field nueva-gestion__titulo-icono" style={{ marginBottom: 0 }}>
+              <label htmlFor="tarea-titulo">Nueva gestión *</label>
+              <div className="nueva-gestion__nombre-linea">
+                <input
+                  id="tarea-titulo"
+                  placeholder="Ej: Reservar salón"
+                  value={nuevoTitulo}
+                  onChange={e => { setNuevoTitulo(e.target.value); quitarErrorTarea('titulo'); }}
+                  aria-invalid={!!erroresTarea.titulo}
+                  aria-describedby={erroresTarea.titulo ? 'tarea-titulo-error' : undefined}
+                />
+                <select
+                  id="tarea-icono"
+                  aria-label="Icono de la gestión"
+                  value={nuevoIcono}
+                  onChange={e => setNuevoIcono(e.target.value)}
+                >
+                  {ICONOS_GESTION.map(opcion => (
+                    <option key={opcion.icono} value={opcion.icono}>{opcion.icono}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="tarea-fecha">Plazo *</label>
+              <input
+                id="tarea-fecha"
+                type="date"
+                value={nuevaFecha}
+                onChange={e => { setNuevaFecha(e.target.value); quitarErrorTarea('fecha'); }}
+                aria-invalid={!!erroresTarea.fecha}
+                aria-describedby={erroresTarea.fecha ? 'tarea-fecha-error' : undefined}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="tarea-horas">Horas *</label>
+              <input
+                id="tarea-horas"
+                type="number"
+                min={0.5}
+                step={0.5}
+                value={nuevasHoras}
+                onChange={e => { setNuevasHoras(e.target.value); quitarErrorTarea('horas'); }}
+                aria-invalid={!!erroresTarea.horas}
+                aria-describedby={erroresTarea.horas ? 'tarea-horas-error' : undefined}
+              />
+            </div>
+            <div className="nueva-gestion__acciones">
+              <button className="btn btn-primary" style={{ width: 'auto' }} type="submit" disabled={creandoTarea}>
+                {creandoTarea ? 'Agregando…' : 'Agregar gestión'}
+              </button>
+              <button className="btn btn-outline" type="button" onClick={() => setMostrarFormularioTarea(false)} disabled={creandoTarea}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+          {erroresTarea.titulo && <p id="tarea-titulo-error" className="error-text" role="alert" style={{ marginTop: 8 }}>{erroresTarea.titulo}</p>}
+          {erroresTarea.fecha && <p id="tarea-fecha-error" className="error-text" role="alert" style={{ marginTop: 8 }}>{erroresTarea.fecha}</p>}
+          {erroresTarea.horas && <p id="tarea-horas-error" className="error-text" role="alert" style={{ marginTop: 8 }}>{erroresTarea.horas}</p>}
+        </form>
+      )}
       {modales}
     </div>
   );

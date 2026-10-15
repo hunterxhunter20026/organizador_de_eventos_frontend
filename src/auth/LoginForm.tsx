@@ -129,100 +129,111 @@ export function LoginForm({ onAutenticado }: { onAutenticado: () => void }) {
     if (nuevoModo === 'registro') setAviso(null);
   }
 
+    const marca = (
+    <header className="login-marca">
+      <h1 className="login-marca__nombre">Hormig<span>App</span></h1>
+      <p className="login-marca__lema">Manteniendo todo en orden y sin prisa</p>
+    </header>
+  );
+
   return (
-    <div className="app-shell" style={{ justifyContent: 'center' }}>
-      <div className="card card--narrow" style={{ textAlign: 'center' }}>
-        {modo === 'login' ? (
-          <>
-            <h1 className="title">Bienvenida de vuelta</h1>
-            <p className="subtitle">Organiza tus eventos sin fricción.</p>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-card__form">
+          {marca}
 
-            {aviso && <p role="status">{aviso}</p>}
+          {modo === 'login' ? (
+            <>
+              {aviso && <p className="login-aviso" role="status">{aviso}</p>}
 
-            <form onSubmit={manejarLogin} style={{ textAlign: 'left' }} noValidate>
-              <div className="field">
-                <label htmlFor="email">Correo electrónico</label>
-                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
-              </div>
-              <div className="field">
-                <label htmlFor="password">Contraseña</label>
-                <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-              </div>
-              {error && <p className="error-text" role="alert">{error}</p>}
-              <button className="btn btn-primary" type="submit" disabled={cargando}>
-                {cargando ? 'Entrando...' : 'Iniciar sesión'}
-              </button>
-            </form>
+              <form onSubmit={manejarLogin} noValidate>
+                <div className="field">
+                  <label htmlFor="email">Correo electrónico</label>
+                  <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="password">Contraseña</label>
+                  <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                </div>
+                {error && <p className="error-text" role="alert">{error}</p>}
+                <button className="btn btn-primary" type="submit" disabled={cargando}>
+                  {cargando ? 'Entrando...' : 'Iniciar sesión'}
+                </button>
+              </form>
 
-            <p style={{ marginTop: 16 }}>
-              ¿No tienes cuenta?{' '}
-              <button type="button" style={estiloEnlace} onClick={() => irA('registro')}>
-                Créala aquí
-              </button>
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="title">Crear cuenta</h1>
-            <p className="subtitle">Regístrate para organizar tus eventos.</p>
+              <p className="helper-text">
+                ¿No tienes cuenta?{' '}
+                <button type="button" style={estiloEnlace} onClick={() => irA('registro')}>
+                  Créala aquí
+                </button>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="login-subtitulo">Crear cuenta</h2>
 
-            <form onSubmit={manejarRegistro} style={{ textAlign: 'left' }} noValidate>
-              <div className="field">
-                <label htmlFor="nombre-reg">Nombre *</label>
-                <input
-                  id="nombre-reg"
-                  type="text"
-                  placeholder="Ej: María Pérez"
-                  value={nombreReg}
-                  onChange={e => setNombreReg(e.target.value)}
-                  aria-invalid={!!erroresReg.nombre}
-                  aria-describedby={erroresReg.nombre ? 'nombre-reg-error' : undefined}
-                />
-                {erroresReg.nombre && <p id="nombre-reg-error" className="error-text" role="alert">{erroresReg.nombre}</p>}
-              </div>
+              <form onSubmit={manejarRegistro} noValidate>
+                <div className="field">
+                  <label htmlFor="nombre-reg">Nombre *</label>
+                  <input
+                    id="nombre-reg"
+                    type="text"
+                    placeholder="Ej: María Pérez"
+                    value={nombreReg}
+                    onChange={e => setNombreReg(e.target.value)}
+                    aria-invalid={!!erroresReg.nombre}
+                    aria-describedby={erroresReg.nombre ? 'nombre-reg-error' : undefined}
+                  />
+                  {erroresReg.nombre && <p id="nombre-reg-error" className="error-text" role="alert">{erroresReg.nombre}</p>}
+                </div>
 
-              <div className="field">
-                <label htmlFor="email-reg">Correo electrónico *</label>
-                <input
-                  id="email-reg"
-                  type="email"
-                  placeholder="Ej: nombre@correo.com"
-                  value={emailReg}
-                  onChange={e => setEmailReg(e.target.value)}
-                  aria-invalid={!!erroresReg.email}
-                  aria-describedby={erroresReg.email ? 'email-reg-error' : undefined}
-                />
-                {erroresReg.email && <p id="email-reg-error" className="error-text" role="alert">{erroresReg.email}</p>}
-              </div>
+                <div className="field">
+                  <label htmlFor="email-reg">Correo electrónico *</label>
+                  <input
+                    id="email-reg"
+                    type="email"
+                    placeholder="Ej: nombre@correo.com"
+                    value={emailReg}
+                    onChange={e => setEmailReg(e.target.value)}
+                    aria-invalid={!!erroresReg.email}
+                    aria-describedby={erroresReg.email ? 'email-reg-error' : undefined}
+                  />
+                  {erroresReg.email && <p id="email-reg-error" className="error-text" role="alert">{erroresReg.email}</p>}
+                </div>
 
-              <div className="field">
-                <label htmlFor="password-reg">Contraseña *</label>
-                <input
-                  id="password-reg"
-                  type="password"
-                  value={passwordReg}
-                  onChange={e => setPasswordReg(e.target.value)}
-                  aria-invalid={!!erroresReg.password}
-                  aria-describedby={erroresReg.password ? 'password-reg-error' : undefined}
-                />
-                {erroresReg.password && <p id="password-reg-error" className="error-text" role="alert">{erroresReg.password}</p>}
-              </div>
+                <div className="field">
+                  <label htmlFor="password-reg">Contraseña *</label>
+                  <input
+                    id="password-reg"
+                    type="password"
+                    value={passwordReg}
+                    onChange={e => setPasswordReg(e.target.value)}
+                    aria-invalid={!!erroresReg.password}
+                    aria-describedby={erroresReg.password ? 'password-reg-error' : undefined}
+                  />
+                  {erroresReg.password && <p id="password-reg-error" className="error-text" role="alert">{erroresReg.password}</p>}
+                </div>
 
-              {errorGuardar && <p className="error-text" role="alert">{errorGuardar}</p>}
+                {errorGuardar && <p className="error-text" role="alert">{errorGuardar}</p>}
 
-              <button className="btn btn-primary" type="submit" disabled={guardando}>
-                {guardando ? 'Creando cuenta...' : 'Crear cuenta'}
-              </button>
-            </form>
+                <button className="btn btn-primary" type="submit" disabled={guardando}>
+                  {guardando ? 'Creando cuenta...' : 'Crear cuenta'}
+                </button>
+              </form>
 
-            <p style={{ marginTop: 16 }}>
-              ¿Ya tienes cuenta?{' '}
-              <button type="button" style={estiloEnlace} onClick={() => irA('login')}>
-                Inicia sesión
-              </button>
-            </p>
-          </>
-        )}
+              <p className="helper-text">
+                ¿Ya tienes cuenta?{' '}
+                <button type="button" style={estiloEnlace} onClick={() => irA('login')}>
+                  Inicia sesión
+                </button>
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="login-card__imagen">
+          <img src="/hormigas-login.png" alt="" />
+        </div>
       </div>
     </div>
   );

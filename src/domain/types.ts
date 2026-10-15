@@ -34,6 +34,7 @@ export interface TareaLogistica {
   usuarioId: number;
   titulo: string;
   descripcion: string | null;
+  icono: string | null;
   fechaLimite: string; // ISO date
   horasEstimadas: number;
   estado: EstadoTarea;
