@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+node_modules
+=======
 # Secretos / entorno
 .env
 *.log
@@ -15,3 +18,4 @@ node_modules/
 dist/
 .vite/
 .env.local
+>>>>>>> 291f41087ad84a566e57473ed2e38a1d49da42ff

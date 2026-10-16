@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { authApi } from '../api/authApi';
 import { usuariosApi } from '../api/eventosApi';
+import { guardarSesion } from './sesion';
 
 // ARCHITECTURAL TRACE: Frontend feature — auth (US-11). Traza: US-021
 // Login real contra POST /api/auth/login (el backend emite el token firmado y
@@ -52,8 +53,12 @@ export function LoginForm({ onAutenticado }: { onAutenticado: () => void }) {
     setCargando(true);
     try {
       const { token, usuario } = await authApi.login(email.trim(), password);
-      localStorage.setItem('token', token);
-      localStorage.setItem('usuarioNombre', usuario.nombre);
+      // Error: la app confia en un token viejo
+      //localStorage.setItem('token', token);
+      //localStorage.setItem('usuarioNombre', usuario.nombre);
+
+      guardarSesion(token, usuario.nombre);
+
       onAutenticado();
     } catch (err) {
       // El backend nunca revela si el correo existe o la contraseña es incorrecta
