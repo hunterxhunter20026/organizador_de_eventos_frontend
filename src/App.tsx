@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LoginForm } from './auth/LoginForm';
 import { MisEventos } from './features/eventos/MisEventos';
 import { EventoDetalle } from './features/eventos/EventoDetalle';
@@ -7,6 +7,8 @@ import { Hoy } from './features/hoy/Hoy';
 import { Configuracion } from './features/configuracion/Configuracion';
 import type { Evento } from './domain/types';
 import { IconoHoy, IconoEventos, IconoUsuarios, IconoConfig, IconoSalir } from './ui/Iconos';
+import { EVENTO_SESION_INVALIDA, leerToken, limpiarSesion } from './auth/sesion';
+import { authApi } from './api/authApi';
 
 type Vista = 'eventos' | 'usuarios' | 'hoy' | 'config';
 
@@ -20,17 +22,63 @@ const ITEMS: { id: Vista; etiqueta: string; icono: React.ReactNode }[] = [
 // Composición raíz: barra lateral + contenido. Las cuatro secciones (Hoy, Mis
 // eventos, Usuarios y Configuración) están conectadas al backend.
 export default function App() {
-  const [autenticado, setAutenticado] = useState(!!localStorage.getItem('token'));
+  const [autenticado, setAutenticado] = useState(false);
+  const [verificandoSesion, setVerificandoSesion] = useState(!!leerToken());
   const [vista, setVista] = useState<Vista>('eventos');
   const [eventoAbierto, setEventoAbierto] = useState<Evento | null>(null);
   const [crearAlEntrar, setCrearAlEntrar] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function confirmarSesion(){
+      if (!leerToken()) {
+        setAutenticado(false);
+        setVerificandoSesion(false);
+        return;
+      }
+      try {
+        await authApi.sesion();
+        if (!cancelado) setAutenticado(true);
+      } catch {
+        if (!cancelado) {
+          limpiarSesion();
+          setAutenticado(false);
+        }
+      } finally {
+        if (!cancelado) setVerificandoSesion(!false);
+      }
+    }
+
+    void confirmarSesion();
+
+    function alInvalidarSesion() {
+      setAutenticado(false);
+      setEventoAbierto(null);
+    }
+
+    window.addEventListener(EVENTO_SESION_INVALIDA, alInvalidarSesion);
+    return () => {
+      cancelado = true; 
+      window.removeEventListener(EVENTO_SESION_INVALIDA, alInvalidarSesion);
+    };
+  }, []);
+
+  if (verificandoSesion) {
+    return (
+      <div className='login-page'>
+        <p className='helper-text' role='status'>Comprobando su inicio de sesion, por favor espere un momento</p>
+      </div>
+    )
+  }
+
+
   if (!autenticado) {
     return <LoginForm onAutenticado={() => setAutenticado(true)} />;
   }
 
   function cerrarSesion() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuarioNombre');
+    limpiarSesion();
     setAutenticado(false);
     setEventoAbierto(null);
   }

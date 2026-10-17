@@ -13,8 +13,8 @@ export function guardarSesion(token: string, nombre: string): void{
 }
 
 export function limpiarSesion(): void {
-    limpiarSesion();
-    window.dispatchEvent(new Event(EVENTO_SESION_INVALIDA));
+    localStorage.removeItem(CLAVE_TOKEN);
+    localStorage.removeItem(CLAVE_NOMBRE)
 }
 
 export function invalidarSesion(): void {
