@@ -27,6 +27,13 @@ export default function App() {
   const [vista, setVista] = useState<Vista>('eventos');
   const [eventoAbierto, setEventoAbierto] = useState<Evento | null>(null);
   const [crearAlEntrar, setCrearAlEntrar] = useState(false);
+  const [esperaLarga, setEsperaLarga] = useState(false);
+
+  useEffect( () => {
+    if (!verificandoSesion) return;
+    const t = setTimeout(() => setEsperaLarga(true), 20000);
+    return () => clearTimeout(t);
+  }, [verificandoSesion]);
 
   useEffect(() => {
     let cancelado = false;
@@ -67,8 +74,17 @@ export default function App() {
   if (verificandoSesion) {
     return (
       <div className='login-page'>
-        <p className='helper-text' role='status'>Comprobando su inicio de sesion, por favor espere un momento</p>
+        <p className='helper-text' role='status'>
+          Comprobando su inicio de sesion, el servidor puede tardar unos segundos en despertar</p>
+        {esperaLarga && (
+          <p className='helper-text'>
+            La espera esta tardando mas de lo normal, por favor recargue la pagina. 
+            <button className='btn' onClick={() => window.location.reload}>Reintentar</button>
+          </p>
+          
+        )}
       </div>
+      
     )
   }
 
