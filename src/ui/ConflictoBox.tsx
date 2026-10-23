@@ -68,7 +68,7 @@ export function ConflictoBox({
 
   return (
     <Modal
-      titulo="Este día quedaría sobrecargado"
+      titulo="Las horas asignadas superan el máximo permitido"
       urgente
       onCerrar={() => { if (!procesando) onCerrar(); }}
       acciones={<button className="btn btn-outline" disabled={procesando} onClick={onCerrar}>Cancelar</button>}
@@ -76,7 +76,7 @@ export function ConflictoBox({
       <div className="conflicto-box">
         <p className="conflicto-box__texto">{conflicto.mensaje}.</p>
         <p className="conflicto-box__texto">
-          Puedes cambiar la fecha o ajustar el tiempo estimado antes de guardar.
+          Para solucionar esto puedes cambiar la fecha o ajustar el tiempo estimado o de lo contrario no se puede guardar la gestión.
         </p>
         <div className="conflicto-box__alternativas" aria-label="Opciones para resolver">
           <button className="btn btn-outline" disabled={procesando} onClick={() => { setAlternativa('fecha'); setError(null); }}>
