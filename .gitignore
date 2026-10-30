@@ -1,1 +1,18 @@
 node_modules
+# Secretos / entorno
+.env
+*.log
+
+# Frontend (Node/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# General
+.DS_Store
+coverage/
+
+node_modules/
+dist/
+.vite/
+.env.local

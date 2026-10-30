@@ -53,7 +53,7 @@ export default function App() {
           setAutenticado(false);
         }
       } finally {
-        if (!cancelado) setVerificandoSesion(!false);
+        if (!cancelado) setVerificandoSesion(true);
       }
     }
 
