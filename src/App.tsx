@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { LoginForm } from './auth/LoginForm';
 import { MisEventos } from './features/eventos/MisEventos';
 import { EventoDetalle } from './features/eventos/EventoDetalle';
-import { GestionUsuarios } from './features/usuarios/GestionUsuarios';
+//import { GestionUsuarios } from './features/usuarios/GestionUsuarios';
 import { Hoy } from './features/hoy/Hoy';
 import { Configuracion } from './features/configuracion/Configuracion';
 import type { Evento } from './domain/types';
@@ -53,7 +53,7 @@ export default function App() {
           setAutenticado(false);
         }
       } finally {
-        if (!cancelado) setVerificandoSesion(true);
+        if (!cancelado) setVerificandoSesion(false);
       }
     }
 
@@ -73,15 +73,19 @@ export default function App() {
 
   if (verificandoSesion) {
     return (
-      <div className='login-page'>
-        <p className='helper-text' role='status'>
-          Comprobando su inicio de sesion, el servidor puede tardar unos segundos en despertar</p>
+      <div className="login-page" style={{ flexDirection: 'column', gap: 12, textAlign: 'center' }}>
+        <p className="helper-text" role="status">
+          Comprobando tu inicio de sesión, el servidor puede tardar unos segundos en despertar.
+        </p>
         {esperaLarga && (
-          <p className='helper-text'>
-            La espera esta tardando mas de lo normal, por favor recargue la pagina. 
-            <button className='btn' onClick={() => window.location.reload}>Reintentar</button>
-          </p>
-          
+          <>
+            <p className="helper-text">
+              La espera está tardando más de lo normal. Puedes volver a intentarlo.
+            </p>
+            <button className="btn" onClick={() => window.location.reload()}>
+              Reintentar
+            </button>
+          </>
         )}
       </div>
       
