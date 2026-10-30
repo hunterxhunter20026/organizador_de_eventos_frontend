@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 node_modules
-=======
 # Secretos / entorno
 .env
 *.log
