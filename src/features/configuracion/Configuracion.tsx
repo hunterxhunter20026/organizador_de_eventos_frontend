@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { configuracionApi } from '../../api/configuracionApi';
+import { Modal } from '../../ui/Modal';
 
 // ARCHITECTURAL TRACE: Frontend feature — configuración de límite diario
 // (US-12). El backend valida el rango 1-16 y aplica 6h por defecto; aquí solo
@@ -84,12 +85,26 @@ export function Configuracion() {
             />
             {errorCampo && <p id="limite-diario-error" className="error-text" role="alert">{errorCampo}</p>}
           </div>
-          {errorGuardar && <p className="error-text" role="alert">{errorGuardar}</p>}
           {exito && <p className="hoy-aviso" role="status">Límite actualizado correctamente.</p>}
           <button className="btn btn-primary" style={{ width: 'auto' }} type="submit" disabled={guardando}>
             {guardando ? 'Guardando…' : 'Guardar'}
           </button>
         </form>
+      )}
+
+      {errorGuardar && (
+        <Modal
+          titulo="No se pudo guardar el límite"
+          urgente
+          onCerrar={() => setErrorGuardar(null)}
+          acciones={
+            <button className="btn btn-outline btn-outline--danger" onClick={() => setErrorGuardar(null)}>
+              Cerrar
+            </button>
+          }
+        >
+          {errorGuardar}
+        </Modal>
       )}
     </div>
   );
