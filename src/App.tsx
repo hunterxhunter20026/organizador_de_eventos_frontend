@@ -71,7 +71,7 @@ export default function App() {
     };
   }, []);
 
- /* if (verificandoSesion) {
+  if (verificandoSesion) {
     return (
       <div className="login-page" style={{ flexDirection: 'column', gap: 12, textAlign: 'center' }}>
         <p className="helper-text" role="status">
@@ -90,7 +90,7 @@ export default function App() {
       </div>
       
     )
-  }*/
+  }
 
 
   if (!autenticado) {
